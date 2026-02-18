@@ -117,7 +117,7 @@ exec-mono (ADD x c) l = ⊥≲itrans (⊥≲iget->>= l) (⊥≲i>>=-cong-r _ λ 
 exec-mono {suc j} LOOP l = ⊥≲ilater (exec-mono LOOP l)
 exec-mono HALT l = ⊥≲i⊑ (refl , l)
 exec-mono (PRINT c) l = ⊥≲i>>-cong-r _ (exec-mono c l)
-exec-mono (FORK c1 c2) l = ⊥≲i∥⃗-cong (exec-mono c1 ⊑-refl) (exec-mono c2 l)
+exec-mono (FORK c1 c2) l = ⊥≲i∥⃗-cong (exec-mono c1 (⊑-refl {{MemoryOrd}})) (exec-mono c2 l)
 
 
 -----------------

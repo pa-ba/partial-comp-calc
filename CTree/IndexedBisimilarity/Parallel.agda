@@ -35,7 +35,7 @@ open import Data.Nat.Induction
   prf {suc i} {B = B} {E} {v = v} a p = ~istep' (left a p) (right a p) where
     left : (ac : Acc (_<_) (suc i)) → (p : CTree E B ∞)
       → ∀ {l p'} → ((return v ∥⃗ p) ↑) [ l ]⇒ p' → ∃[ q' ] (p ↑) [ l ]⇒ q' × p' ~̂[ lsuc l i ] q'
-    left (acc rec) (later p) (⇒-⊕-l (⇒-⊕-r ⇒-later)) = _ , ⇒-later , prf (rec i ≤-refl) (force p)
+    left (acc rec) (later p) (⇒-⊕-l (⇒-⊕-r ⇒-later)) = _ , ⇒-later , prf (rec ≤-refl) (force p)
     left a (p ⊕ q) (⇒-⊕-l (⇒-⊕-r (⇒-⊕-l tr))) with
       q' , tr' , b ← left a p (⇒-⊕-l (⇒-⊕-r tr))
       = _ , ⇒-⊕-l tr' , b
@@ -52,7 +52,7 @@ open import Data.Nat.Induction
     right : (ac : Acc (_<_) (suc i)) → (p : CTree E B ∞) → ∀ {l q'}
           → (p ↑) [ l ]⇒ q' → ∃[ p' ] ((return v ∥⃗ p) ↑) [ l ]⇒ p' × p' ~̂[ lsuc l i ] q'
     right a (now v) (⇒-now .v) = _ , ⇒-⊕-r (⇒-now v) , ~irefl
-    right (acc rec) (later p) ⇒-later = -, ⇒-⊕-l (⇒-⊕-r ⇒-later) , prf (rec i ≤-refl) (force p)
+    right (acc rec) (later p) ⇒-later = -, ⇒-⊕-l (⇒-⊕-r ⇒-later) , prf (rec ≤-refl) (force p)
     right a (p ⊕ q) (⇒-⊕-l tr) with right a p tr
     ... | q' , ⇒-⊕-l (⇒-⊕-r tr') , b = -, ⇒-⊕-l (⇒-⊕-r (⇒-⊕-l tr')) , b
     ... | q' , ⇒-⊕-r tr' , b = -, ⇒-⊕-r (⇒-⊕-l tr') , b

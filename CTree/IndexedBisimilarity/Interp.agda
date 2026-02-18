@@ -1,4 +1,4 @@
-{-# OPTIONS --sized-types --guardedness #-}
+{-# OPTIONS --sized-types --guardedness --large-indices #-}
 
 
 -- Properties for the effect handler function `interpSt`.
@@ -103,22 +103,22 @@ module InterpStep where
       ... | inj₁ (p' , l' , ef , tr' , refl) rewrite effFree-lsuc {i = i} ef with ≲ileft' bi tr'
       ... | l' , q' , leq , tr'' , bi' with (⊑-effFree leq ef)
       ... | l'' , leq' , ef' =
-        _ , _ , leq' , interpSt-effFree ef' tr'' , prf (rec _ (recStep⁺ tr')) bi'
+        _ , _ , leq' , interpSt-effFree ef' tr'' , prf (rec (recStep⁺ tr')) bi'
       left tr | inj₂ (B , e , c , tr1 , tr2)
         with l' , wc' , ⊑ε _ , tr1' , bi1 ← ≲ileft' bi tr1 with c' , refl ← ⇒-ε-wait tr1'
         with l'' , fq' , leq , tr2' , bi2 ← ≲ileft' (≲i>>=-cong-r (f st e)  (λ (x , s') →
-             prf (rec _ (inj₂ (refl , (-, ⇒-inp x c) ∷ [ -, tr1 ] ))) (≲iwait' bi1 x))) tr2
+             prf (rec (inj₂ (refl , (-, ⇒-inp x c) ∷ [ -, tr1 ] ))) (≲iwait' bi1 x))) tr2
              = -, -, leq , interpSt-eff tr1' tr2' , bi2
       right : ∀ {l fq'} → interpSt' st f q [ l ]⇒ fq' → 
         ∃[ l' ] ∃[ fp' ] l' ⊑ l × interpSt' st f p [ l' ]⇒ fp' × fp' ≲̂[ lsuc l i ] fq'
       right tr with interpSt-step {p = q} tr
       ... | inj₁ (p' , l' , ef , tr' , refl) rewrite effFree-lsuc {i = i} ef with ≲iright' bi tr'
       ... | l' , q' , leq , tr'' , bi' with (⊑-effFree' leq ef)
-      ... | l'' , leq' , ef' = -, -, leq' , interpSt-effFree ef' tr'' , prf (rec _ (recStep⊑⁺ leq tr'')) bi'
+      ... | l'' , leq' , ef' = -, -, leq' , interpSt-effFree ef' tr'' , prf (rec (recStep⊑⁺ leq tr'')) bi'
       right tr | inj₂ (B , e , c , tr1 , tr2)
         with l' , wc , ⊑ε _ , tr1' , bi1 ← ≲iright' bi tr1 with c , refl ← ⇒-ε-wait tr1'
         with l'' , fp' , leq , tr2' , bi2 ← ≲iright' (≲i>>=-cong-r (f st e)  (λ (x , s') →
-             prf (rec _ (inj₂ (refl , (-, ⇒-inp x c) ∷ [ -, tr1' ] ))) (≲iwait' bi1 x))) tr2
+             prf (rec (inj₂ (refl , (-, ⇒-inp x c) ∷ [ -, tr1' ] ))) (≲iwait' bi1 x))) tr2
              = -, -, leq , interpSt-eff tr1' tr2' , bi2
 
 

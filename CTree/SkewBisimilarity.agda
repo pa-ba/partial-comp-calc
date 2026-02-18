@@ -15,6 +15,7 @@ open import CTree.Safe
 open import CTree.SkewIndexedBisimilarity
 open import CTree.Bisimilarity
 open import Preorder
+open import Relation.Binary.PropositionalEquality
 
 open import Data.Nat
 open import Data.Nat.Properties
@@ -56,10 +57,42 @@ p ⊥≲̂ q = p ≲̂ NotStuckEff ! q
 ⊥≲-⊥≲i : ∀ {i E A} {{_ : Ord A}} {p q : CTree⊥ E A ∞} → p ⊥≲ q → p ⊥≲[ i ] q
 ⊥≲-⊥≲i = ≲-≲i
 
+------------------------
+-- Proposition 1 (ii) --
+------------------------
 
 ⊥~-~ : ∀ {E A } {p q : CTree⊥ E A ∞} → safe p → p ⊥~ q → p ~ q
 ⊥~-~ s b = ~i-~ (λ i → ⊥~i-~i s (⊥~-⊥~i {i} b))
 
+
+------------------------
+-- Proposition 1 (i) --
+------------------------
+~-⊥~ : ∀ {E A} {p q : CTree⊥ E A ∞} → p ~ q → p ⊥~ q
+~-⊥~ b = ~i-~ (λ i → ~i-⊥~i ((~-~i  b)))
+
+
+-----------------------
+-- Proposition 2 (i) --
+-----------------------
+
+⊥~-⊥≲ : ∀ {E A } {{_ : Ord A}} {p q : CTree⊥ E A ∞} → p ⊥~ q → p ⊥≲ q
+⊥~-⊥≲ b = ⊥≲i-⊥≲ (λ i → ⊥~i-⊥≲i (⊥~-⊥~i b))
+
+------------------------
+-- Proposition 2 (ii) --
+------------------------
+
+⊥≲-⊥~ : ∀ {E A} {{_ : Ord A}} {p q : CTree⊥ E A ∞} → (∀ {x y : A} → x ⊑ y → x ≡ y) → p ⊥≲ q → p ⊥~ q
+⊥≲-⊥~ s b = ⊥~i-⊥~ (λ i → ⊥≲i-⊥~i s (⊥≲-⊥≲i b))
+
+-----------------
+-- Corollary 3 --
+-----------------
+
+⊥≲-~ : ∀ {E A B P} {{_ : Ord A}} {{_ : Ord B}} {p q : CTree⊥ E A ∞} {f : A → B} 
+  → safeP P p → (∀ {x y : B} → x ⊑ y → x ≡ y) → (∀ {a b} → a ⊑ b → f a ⊑ f b) → p ⊥≲ q → map f p ~ map f q
+⊥≲-~ S E M b = ~i-~ (λ i → ⊥≲i-~i S E M (⊥≲-⊥≲i b))
 
 ⊥≲-≲ : ∀ {E A} {{_ : Ord A}} {p q : CTree⊥ E A ∞} → safe p → p ⊥≲ q → p ≲ q
 ⊥≲-≲ s b = ≲i-≲ (λ i → ⊥≲i-≲i s (⊥≲-⊥≲i {i} b))

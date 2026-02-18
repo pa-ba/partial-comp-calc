@@ -1,4 +1,4 @@
-{-# OPTIONS --sized-types #-}
+{-# OPTIONS --sized-types --large-indices #-}
 
 ------------------------------------------------------
 -- Definition of step-indexed (strong) bisimilarity
@@ -71,16 +71,16 @@ data _⊑lab_  {A E} {{_ : Ord A}} : (label E A) → (label E A) → Set₁ wher
 
 
 instance 
-  LabOrd : ∀ {E} {A : Set} {{_ : Ord A}} → Ord (label E A)
+  LabOrd : ∀ {E} {A : Set} {{M : Ord A}} → Ord (label E A)
   _⊑_ {{LabOrd}} = _⊑lab_
   ⊑-refl ⦃ LabOrd ⦄ {⟨ ε x ⟩} = ⊑ε x
   ⊑-refl ⦃ LabOrd ⦄ {⟨ ι x ⟩} = ⊑ι x
-  ⊑-refl ⦃ LabOrd ⦄ {⟨ ρ x ⟩} = ⊑ρ ⊑-refl
+  ⊑-refl  ⦃ LabOrd ⦃ M = M ⦄ ⦄ {⟨ ρ x ⟩} = ⊑ρ (⊑-refl {{M}})
   ⊑-refl ⦃ LabOrd ⦄ {τ} = ⊑τ
   ⊑-trans ⦃ LabOrd ⦄ ⊑τ r = r
   ⊑-trans ⦃ LabOrd ⦄ (⊑ε e) r = r
   ⊑-trans ⦃ LabOrd ⦄ (⊑ι r₁) r = r
-  ⊑-trans ⦃ LabOrd ⦄ (⊑ρ l) (⊑ρ r) = ⊑ρ (⊑-trans l r)
+  ⊑-trans ⦃ LabOrd ⦃ M = M ⦄ ⦄ (⊑ρ l) (⊑ρ r) = ⊑ρ (⊑-trans ⦃ M ⦄ l r)
 
 
 infix 3 _≲̂_[_]_

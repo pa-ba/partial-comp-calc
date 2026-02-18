@@ -35,7 +35,7 @@ data label (E : Set → Set) (A : Set) : Set₁ where
 -- retFree l l' indicates that l and l' are equal and not of the form
 -- ⟨ρ _⟩.
 
-data retFree {E : Set → Set} {A B : Set} : label E A → label E B → Set where
+data retFree {E : Set → Set} {A B : Set} : label E A → label E B → Set₁ where
   retFreeε : ∀ {B} {e : E B} → retFree ⟨ ε e ⟩ ⟨ ε e ⟩
   retFreeι : ∀ {B} {r : B} → retFree ⟨ ι r ⟩ ⟨ ι r ⟩
   retFreeτ : retFree τ τ
@@ -158,20 +158,20 @@ mutual
 
   private
     ⇐-wf↑ : ∀ {E A} →  ∀ p → Acc (_⇐_ {E} {A}) (p ↑)
-    ⇐-wf↑ p = acc  down
+    ⇐-wf↑ p = acc down
       where ⇐-wf-∅ : ∀ {E A} →  (Acc (_⇐_ {E} {A})) (∅ ↑)
-            ⇐-wf-∅ =  acc λ _ ()
+            ⇐-wf-∅ =  acc λ ()
 
-            down : ∀ q → q ⇐ p ↑ → (Acc _⇐_) q
-            down _ (_ , ⇒-eff e c) = ⇐-wf-wait c
-            down _ (_ , ⇒-now v) = ⇐-wf-∅
-            down q (a , ⇒-⊕-l trans) with ⇐-wf↑ _
-            ... | acc rs =  rs q ( _ , trans)
-            down q (a , ⇒-⊕-r trans) with ⇐-wf↑ _
-            ... | acc rs =  rs q ( _ , trans)
+            down : ∀ {q} → q ⇐ p ↑ → (Acc _⇐_) q
+            down (_ , ⇒-eff e c) = ⇐-wf-wait c
+            down (_ , ⇒-now v) = ⇐-wf-∅
+            down (a , ⇒-⊕-l trans) with ⇐-wf↑ _
+            ... | acc rs = rs ( _ , trans)
+            down (a , ⇒-⊕-r trans) with ⇐-wf↑ _
+            ... | acc rs = rs ( _ , trans)
 
     ⇐-wf-wait : ∀ {E A B} →  ∀ p → Acc (_⇐_ {E} {A}) (wait B p )
-    ⇐-wf-wait c = acc (λ { _ (_ , ⇒-inp r .c) → ⇐-wf↑ (c r)})
+    ⇐-wf-wait c = acc (λ { (_ , ⇒-inp r .c) → ⇐-wf↑ (c r)})
 
 
 -- We are going to use well-founded recursion on a couple of

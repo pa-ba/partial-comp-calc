@@ -17,11 +17,11 @@ record Ord {a} (M : Set a) : Set (L.suc a) where
 open Ord {{...}} public
 
 instance   
-  ProdOrd : {A B : Set} → {{M : Ord A}} → {{M : Ord B}} → Ord (A × B)
-  ProdOrd {A} {B} {{M}} = record {
+  ProdOrd : {A B : Set} → {{M : Ord A}} → {{N : Ord B}} → Ord (A × B)
+  ProdOrd {A} {B} {{M}} {{N}} = record {
     _⊑_ = λ {(x1 , y1) (x2 , y2) → x1 ⊑ x2 × y1 ⊑ y2 };
-    ⊑-refl =  ⊑-refl , ⊑-refl;
-    ⊑-trans =  λ {(x1 , y1) (x2 , y2) → ⊑-trans x1 x2 , ⊑-trans y1 y2 } 
+    ⊑-refl =  ⊑-refl {{M}} , ⊑-refl {{N}};
+    ⊑-trans =  λ {(x1 , y1) (x2 , y2) → ⊑-trans {{M}} x1 x2 , ⊑-trans {{N}} y1 y2 } 
     }
 
 ≡-Ord : ∀ {A : Set} → Ord A
@@ -51,13 +51,13 @@ data _⊑L_  {A : Set} {{_ : Ord A}} : (List A) → (List A) → Set where
   ⊑L-cons : ∀ {x y xs ys} → x ⊑ y → xs ⊑L ys → (x ∷ xs) ⊑L (y ∷ ys)
 
 
-⊑L-refl : ∀ {A}  {{_ : Ord A}} (m : List A) → m ⊑L m
+⊑L-refl : ∀ {A}  {{M : Ord A}} (m : List A) → m ⊑L m
 ⊑L-refl [] = ⊑L-nil
-⊑L-refl (x ∷ xs) = ⊑L-cons  ⊑-refl  (⊑L-refl xs)
+⊑L-refl {{M}} (x ∷ xs) = ⊑L-cons  (⊑-refl {{M}})  (⊑L-refl xs)
 
-⊑L-trans : ∀ {A : Set} {{_ : Ord A}} {m n u : List A} → m ⊑L n → n ⊑L u → m ⊑L u
+⊑L-trans : ∀ {A : Set} {{M : Ord A}} {m n u : List A} → m ⊑L n → n ⊑L u → m ⊑L u
 ⊑L-trans ⊑L-nil r = r
-⊑L-trans (⊑L-cons x l) (⊑L-cons y r) = ⊑L-cons (⊑-trans x y) (⊑L-trans l r)
+⊑L-trans {{M}} (⊑L-cons x l) (⊑L-cons y r) = ⊑L-cons (⊑-trans {{M}} x y) (⊑L-trans l r)
 
 
 ListOrd : (A : Set) → {{_ : Ord A}} → Ord (List A)

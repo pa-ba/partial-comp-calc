@@ -73,20 +73,20 @@ recStep⊑⁺ {i = i} leq tr with recStep⁺ {i = i} tr
         prf {zero} _ _ = ≲izero
         prf {suc i}  {p = p} {q} (acc rec) b = ≲istep left right where
           left : lsafe L p → ∀ {l p'} → p [ l ]⇒ p'
-            → ∃[ l' ] ∃[ q' ] (l ⊑ l' × q [ l' ]⇒ q' × _≲̂_[_]_ {{O'}} p' L (lsuc l i) q')
-          left ls tr with ≲ileft b ls tr
-          ... | l' , q' , leq , tr' , b' = l' , q' , ⊑lab-monotone mon leq , tr' , prf (rec _ (recStep tr)) b'
+            → ∃[ l' ] ∃[ q' ] (_⊑_ {{LabOrd {{O'}}}} l l' × q [ l' ]⇒ q' × _≲̂_[_]_ {{O'}} p' L (lsuc l i) q')
+          left ls tr with ≲ileft {{O}} b ls tr
+          ... | l' , q' , leq , tr' , b' = l' , q' , ⊑lab-monotone {{O}} {{O'}} mon leq , tr' , prf (rec (recStep tr)) b'
 
           right : lsafe L p → ∀ {l q'} → q [ l ]⇒ q'
-            → ∃[ l' ] ∃[ p' ] (l' ⊑ l × p [ l' ]⇒ p' × _≲̂_[_]_ {{O'}} p' L (lsuc l i) q')
-          right ls tr with ≲iright b ls tr
+            → ∃[ l' ] ∃[ p' ] (_⊑_ {{LabOrd {{O'}}}} l' l × p [ l' ]⇒ p' × _≲̂_[_]_ {{O'}} p' L (lsuc l i) q')
+          right ls tr with ≲iright {{O}} b ls tr
           ... | l' , p' , leq , tr' , b' =
-            l' , p' , ⊑lab-monotone mon leq , tr' , prf (rec _ (recStep⊑ (⊑lab-monotone mon leq) tr')) b'
+            l' , p' , ⊑lab-monotone {{O}} {{O'}} mon leq , tr' , prf (rec (recStep⊑ {{O'}} (⊑lab-monotone {{O}} {{O'}} mon leq) tr')) b'
 
 
 
 ~i-≲i : ∀ {E L A i } {{_ : Ord A}} {p q : CTree' E A} → p ~̂ L [ i ] q → p ≲̂ L [ i ] q
-~i-≲i {{O}} = ≲i-weaken {{≡-Ord}} {{O}} λ {refl → ⊑-refl}
+~i-≲i {{O}} = ≲i-weaken {{≡-Ord}} {{O}} λ {refl → ⊑-refl {{O}}}
 
 
 ~irefl : ∀ {i E A L} {p : CTree' E A} → p ~̂ L [ i ] p
@@ -95,8 +95,8 @@ recStep⊑⁺ {i = i} leq tr with recStep⁺ {i = i} tr
         prf {zero} _ = ~izero
         prf {suc i} (acc rec) =
           ~istep
-            (λ _ trans → _ , trans , prf (rec _ (recStep trans)))
-            (λ _ trans → _ , trans , prf (rec _ (recStep trans)))
+            (λ _ trans → _ , trans , prf (rec (recStep trans)))
+            (λ _ trans → _ , trans , prf (rec (recStep trans)))
 
 ~i≡ : ∀ {i E A L} {p q : CTree E A ∞} → p ≡ q → p ~ L [ i ] q
 ~i≡ refl = ~irefl
@@ -118,30 +118,30 @@ recStep⊑⁺ {i = i} leq tr with recStep⁺ {i = i} tr
           where left : ∀ {l q'} → q [ l ]⇒ q' → ∃[ l' ] ∃[ p' ] (l ⊑≡ l' × p [ l' ]⇒ p' × q' ~̂[ lsuc l i ] p')
                 left trans with ≲iright {{≡-Ord}} b AnyEff-lsafe trans
                 ... | l' , q' , leq , trans' , ibi' rewrite ⊑≡-≡ leq =
-                  _ , q' , ⊑≡-refl , trans' , prf (rec _ (recStep trans')) ibi' 
+                  _ , q' , ⊑≡-refl , trans' , prf (rec (recStep trans')) ibi' 
                 right : ∀ {l p'} → p [ l ]⇒ p' → ∃[ l' ] ∃[ q' ] (l' ⊑≡ l × q [ l' ]⇒ q' × q' ~̂[ lsuc l i ] p')
                 right trans with ≲ileft {{≡-Ord}} b AnyEff-lsafe trans
                 ... | (l' , q' , leq , trans' , ibi') rewrite ⊑≡-≡ leq =
-                  _ , q' , ⊑≡-refl , trans' , prf (rec _ (recStep trans)) ibi'
+                  _ , q' , ⊑≡-refl , trans' , prf (rec (recStep trans)) ibi'
 
 
 ≲itrans : ∀ {i E A L} {{_ : Ord A}} {p q r : CTree' E A} → p ≲̂ L [ i ] q → q ≲̂ L [ i ] r → p ≲̂ L [ i ] r
 ≲itrans b1 b2 = prf (<×⇐-wf _) b1 b2
-  where prf : ∀ {i E A L} {{_ : Ord A}} {p q r : CTree' E A}
+  where prf : ∀ {i E A L} {{O : Ord A}} {p q r : CTree' E A}
             → Acc (×-Lex _≡_ _<_ _⇐_) (i , p) → p ≲̂ L [ i ] q → q ≲̂ L [ i ] r → p ≲̂ L [ i ] r
         prf _ ≲izero ≲izero = ≲izero
-        prf {i = suc i} {L = L} {p = p} {q} {r} (acc rec) b1 b2 = ≲istep left right
+        prf {i = suc i} {L = L} {{O}} {p = p} {q} {r} (acc rec) b1 b2 = ≲istep left right
             where left : lsafe L p → ∀ {l p'} → p [ l ]⇒ p' → ∃[ l' ] ∃[ r' ] (l ⊑ l' × r [ l' ]⇒ r' × p' ≲̂ L [ lsuc l i ] r')
                   left ls trans1 with ≲ileft b1 ls trans1
                   ... | (l' , q' , leq , trans2 , b1') with ≲ileft b2 (lsafe-≲i ls b1) trans2
                   ... | (l'' , r' , leq' , trans3 , b2') rewrite ⊑-lsuc leq i = 
-                    (l'' , r' , ⊑-trans leq leq' , trans3 , prf (rec _ (recStep⊑ leq trans1 ))  b1'  b2')
+                    (l'' , r' , ⊑-trans {{LabOrd {{O}}}} leq leq' , trans3 , prf (rec (recStep⊑ leq trans1 ))  b1'  b2')
 
                   right : lsafe L p → ∀ {l r'} → r [ l ]⇒ r' → ∃[ l' ] ∃[ p' ] (l' ⊑ l × p [ l' ]⇒ p' × p' ≲̂ L [ lsuc l i ] r')
                   right ls trans3 with ≲iright b2 (lsafe-≲i ls b1) trans3
                   ... | (l' , q' , leq , trans2 , b2') with ≲iright b1 ls trans2
                   ... | l'' , p' , leq' , trans1 , b1' rewrite ⊑-lsuc leq i = 
-                    l'' , p' , ⊑-trans leq' leq  , trans1 , prf (rec _ (recStep⊑ (⊑-trans leq' leq) trans1))  b1' b2'
+                    l'' , p' , ⊑-trans {{LabOrd {{O}}}} leq' leq  , trans1 , prf (rec (recStep⊑ (⊑-trans {{LabOrd {{O}}}} leq' leq) trans1))  b1' b2'
 
 ~itrans : ∀ {i E A L} {p q r : CTree' E A} → p ~̂ L [ i ] q → q ~̂ L [ i ] r → p ~̂ L [ i ] r
 ~itrans = ≲itrans {{≡-Ord}}
@@ -160,11 +160,11 @@ recStep⊑⁺ {i = i} leq tr with recStep⁺ {i = i} tr
         prf {L = L} {j = suc j} {p = p} {q} (acc rec) (s≤s {_} {n} le) b = ≲istep left right
           where left : lsafe L p → ∀ {l p'} → p [ l ]⇒ p' → ∃[ l' ] ∃[ q' ] (l ⊑ l' × q [ l' ]⇒ q' × p' ≲̂ L [ lsuc l j ] q')
                 left ls {l} trans with ≲ileft b ls trans
-                ... | l' , q' , leq , trans' , b' = l' , q' , leq , trans' , prf (rec _ (recStep trans)) (lsuc-mono l le) b'
+                ... | l' , q' , leq , trans' , b' = l' , q' , leq , trans' , prf (rec (recStep trans)) (lsuc-mono l le) b'
                 right : lsafe L p → ∀ {l q'} → q [ l ]⇒ q' → ∃[ l' ] ∃[ p' ] (l' ⊑ l × p [ l' ]⇒ p' × p' ≲̂ L [ lsuc l j ] q')
                 right ls {l} trans with ≲iright b ls trans 
                 ... | l' , p' , leq , trans' , b' with le' ← lsuc-mono l le rewrite sym (⊑-lsuc leq n)
-                  = l' , p' , leq , trans' , prf (rec _ (recStep trans')) le' b'
+                  = l' , p' , leq , trans' , prf (rec (recStep trans')) le' b'
 
 ~idown : ∀ {E A L i j} {a b : CTree' E A} → j ≤ i → a ~̂ L [ i ] b → a ~̂ L [ j ] b
 ~idown = ≲idown {{≡-Ord}}
@@ -256,11 +256,11 @@ recStep⊑⁺ {i = i} leq tr with recStep⁺ {i = i} tr
           left : lsafe L p → ∀ {l p'} → p [ l ]⇒ p'
             → ∃[ l' ] ∃[ q' ] (l ⊑ l' × q [ l' ]⇒ q' × p' ≲̂ L [ lsuc l i ] q')
           left ls tr with ≲ileft b AnyEff-lsafe tr
-          ... | l' , q' , leq , tr' , b' =  l' , q' , leq , tr' , prf (rec _ (recStep tr)) b'
+          ... | l' , q' , leq , tr' , b' =  l' , q' , leq , tr' , prf (rec (recStep tr)) b'
           right : lsafe L p → ∀ {l q'} → q [ l ]⇒ q'
             → ∃[ l' ] ∃[ p' ] (l' ⊑ l × p [ l' ]⇒ p' × p' ≲̂ L [ lsuc l i ] q')
           right ls tr with ≲iright b AnyEff-lsafe tr
-          ... | l' , p' , leq , tr' , b' =  l' , p' , leq , tr' , prf (rec _ (recStep⊑ leq tr')) b'
+          ... | l' , p' , leq , tr' , b' =  l' , p' , leq , tr' , prf (rec (recStep⊑ leq tr')) b'
 
 ~ilift : ∀ {E L A i } {p q : CTree E A ∞} → p ~[ i ] q → p ~ L [ i ] q
 ~ilift = ≲ilift {{≡-Ord}}
@@ -274,11 +274,11 @@ recStep⊑⁺ {i = i} leq tr with recStep⁺ {i = i} tr
           left : lsafe L p → ∀ {l p'} → p [ l ]⇒ p'
             → ∃[ q' ] (q [ l ]⇒ q' × p' ~̂ L [ lsuc l i ] q')
           left ls tr with ≲ileft b ls tr
-          ... | l' , q' , leq , tr' , b' rewrite ⊑-≡ ⊑to≡ leq =  q' , tr' , prf (rec _ (recStep tr)) b'
+          ... | l' , q' , leq , tr' , b' rewrite ⊑-≡ ⊑to≡ leq =  q' , tr' , prf (rec (recStep tr)) b'
           right : lsafe L p → ∀ {l q'} → q [ l ]⇒ q'
             → ∃[ p' ] (p [ l ]⇒ p' × p' ~̂ L [ lsuc l i ] q')
           right ls tr with ≲iright b ls tr
-          ... | l' , p' , leq , tr' , b' rewrite ⊑-≡ ⊑to≡ leq =  p' , tr' , prf (rec _ (recStep tr')) b'
+          ... | l' , p' , leq , tr' , b' rewrite ⊑-≡ ⊑to≡ leq =  p' , tr' , prf (rec (recStep tr')) b'
 
 
 module ≲i-Calculation where
@@ -317,21 +317,3 @@ module ~i-Calculation where
 
   _∎ : ∀ {E A i} (x : CTree E A ∞) → x ~[ i ] x
   _∎  x = ~irefl
-
-
-
--- module ~̂i-Calculation where
---   infix  3 _∎
---   infixr 1 _~⟨_⟩_
---   infixr 1 _≡⟨⟩_
-
---   _~⟨_⟩_ : ∀ {E} {A : Set} {i} (x : CTree' E A) →
---     ∀ {y : CTree' E A} {z : CTree' E A} → x ~̂[ i ] y → y ~̂[ i ] z → x ~̂[ i ] z
---   _~⟨_⟩_ {_} x r eq =  ~itrans r eq
-
---   _≡⟨⟩_ : ∀ {E} {A : Set} {i} (x : CTree' E A) → ∀ {y : CTree' E A} → x ~̂[ i ] y → x ~̂[ i ] y
---   _≡⟨⟩_  x eq = eq
-
---   _∎ : ∀ {E} {A : Set} {i} (x : CTree' E A) → x ~̂[ i ] x
---   _∎  x = ~irefl
-

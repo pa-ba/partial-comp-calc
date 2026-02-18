@@ -48,22 +48,22 @@ swap-bijection (x , y) = refl
     ... | inj₁ (inj₁ (LS rf tr')) = _ , map-step2 ((q ∥ p) ↑) swap (coerce-retFree rf)
       (∥-stepRight (RS (coerce-retFree' rf) tr')) , comml _ rf tr' where
         comml : ∀ {l'} p' → retFree l l' → p ↑ [ l' ]⇒ p' → p' ∥₁ q ~̂ L [ lsuc l i ] map' swap (q ∥₂ p')
-        comml {⟨ a ⟩} (p' ↑) rf tr = prf p' q (rec _ (inj₂ (lsuc-retFree rf _ , inj₁ [ ( a , tr) ])))
-        comml {⟨ a ⟩} (wait B c) rf tr = ~iwait (λ v → prf (c v) q (rec _ (inj₂ (lsuc-retFree rf _
+        comml {⟨ a ⟩} (p' ↑) rf tr = prf p' q (rec (inj₂ (lsuc-retFree rf _ , inj₁ [ ( a , tr) ])))
+        comml {⟨ a ⟩} (wait B c) rf tr = ~iwait (λ v → prf (c v) q (rec (inj₂ (lsuc-retFree rf _
                                          , inj₁ (( ι v , ⇒-inp v c) ∷  [(a , tr)])))))
-        comml {τ} (p' ↑) retFreeτ tr = prf p' q (rec _ (inj₁ ≤-refl))
-        comml {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf (c v) q (rec _ (inj₁ ≤-refl)))
+        comml {τ} (p' ↑) retFreeτ tr = prf p' q (rec (inj₁ ≤-refl))
+        comml {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf (c v) q (rec (inj₁ ≤-refl)))
     ... | inj₁ (inj₂ (RS rf tr')) = _ , map-step2 ((q ∥ p) ↑) swap (coerce-retFree rf)
       (∥-stepLeft (LS (coerce-retFree' rf) tr')) , commr _ rf tr' where
         commr : ∀ {l'} q' → retFree l l' → q ↑ [ l' ]⇒ q' → p ∥₂ q' ~̂ L [ lsuc l i ] map' swap (q' ∥₁ p)
-        commr {⟨ a ⟩} (q' ↑) rf tr = prf p q' (rec _ (inj₂ (lsuc-retFree rf _ , inj₂ (refl , [ ( a , tr) ]))))
-        commr {⟨ a ⟩} (wait B c) rf tr = ~iwait (λ v → prf p (c v) (rec _ (inj₂ (lsuc-retFree rf _
+        commr {⟨ a ⟩} (q' ↑) rf tr = prf p q' (rec (inj₂ (lsuc-retFree rf _ , inj₂ (refl , [ ( a , tr) ]))))
+        commr {⟨ a ⟩} (wait B c) rf tr = ~iwait (λ v → prf p (c v) (rec (inj₂ (lsuc-retFree rf _
                                          , inj₂ (refl , ( ι v , ⇒-inp v c) ∷  [(a , tr)])))))
-        commr {τ} (q' ↑) retFreeτ tr = prf p q' (rec _ (inj₁ ≤-refl))
-        commr {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf p (c v) (rec _ (inj₁ ≤-refl)))
+        commr {τ} (q' ↑) retFreeτ tr = prf p q' (rec (inj₁ ≤-refl))
+        commr {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf p (c v) (rec (inj₁ ≤-refl)))
     ... | inj₂ (BSRet tr1 tr2) = _ , map-step1 swap (∥-stepBoth (BSRet tr2 tr1)) , ~irefl
     ... | inj₂ (BSSync {p' = p'} {q' = q'} {v1 = v1} {v2 = v2} {e1 = e1} {e2 = e2} tr1 tr2 tr) =
-      let b = prf (p' v1) (q' v2) (rec _ (inj₂ (refl ,  inj₁ ( ( -, ⇒-inp v1 p') ∷ [ -, tr1 ])))) in
+      let b = prf (p' v1) (q' v2) (rec (inj₂ (refl ,  inj₁ ( ( -, ⇒-inp v1 p') ∷ [ -, tr1 ])))) in
        _ , map-step-lmap {l = lmap swap l} ((q ∥ p) ↑) swap (∥-stepBoth
             (BSSync tr2 tr1 (⇄-sym _ _ tr))) , ~isuc b
     right : lsafe L ((p ∥ q) ↑) → ∀ {l q' } → (map swap (q ∥ p) ↑) [ l ]⇒ q' → ∃[ p' ] ((p ∥ q) ↑) [ l ]⇒ p' × p' ~̂ L [ lsuc l i ] q'
@@ -76,22 +76,22 @@ swap-bijection (x , y) = refl
     ... | inj₁ (inj₁ (LS rf' tr'')) = _ , ∥-stepRight (RS (retFree-trans rf rf') tr'')
                                       , commr _ (retFree-trans rf rf') tr'' where
         commr : ∀ {l'} q' → retFree l l' → q ↑ [ l' ]⇒ q' → p ∥₂ q' ~̂ L [ lsuc l i ] map' swap (q' ∥₁ p)
-        commr {⟨ a ⟩} (q' ↑) rf tr = prf p q' (rec _ (inj₂ (lsuc-retFree rf _ , inj₂ (refl , [ ( a , tr) ]))))
-        commr {⟨ a ⟩} (wait B c) rf tr = ~iwait (λ v → prf p (c v) (rec _ (inj₂ (lsuc-retFree rf _
+        commr {⟨ a ⟩} (q' ↑) rf tr = prf p q' (rec (inj₂ (lsuc-retFree rf _ , inj₂ (refl , [ ( a , tr) ]))))
+        commr {⟨ a ⟩} (wait B c) rf tr = ~iwait (λ v → prf p (c v) (rec (inj₂ (lsuc-retFree rf _
                                          , inj₂ (refl , ( ι v , ⇒-inp v c) ∷  [(a , tr)])))))
-        commr {τ} (q' ↑) retFreeτ tr = prf p q' (rec _ (inj₁ ≤-refl))
-        commr {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf p (c v) (rec _ (inj₁ ≤-refl)))
+        commr {τ} (q' ↑) retFreeτ tr = prf p q' (rec (inj₁ ≤-refl))
+        commr {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf p (c v) (rec (inj₁ ≤-refl)))
     ... | inj₁ (inj₂ (RS rf' tr'')) = _ , ∥-stepLeft (LS (retFree-trans rf rf') tr'')
                                       , comml _ (retFree-trans rf rf') tr'' where
         comml : ∀ {l'} p' → retFree l l' → p ↑ [ l' ]⇒ p' → p' ∥₁ q ~̂ L [ lsuc l i ] map' swap (q ∥₂ p')
-        comml {⟨ a ⟩} (p' ↑) rf tr = prf p' q (rec _ (inj₂ (lsuc-retFree rf _ , inj₁ [ ( a , tr) ])))
-        comml {⟨ a ⟩} (wait B c) rf tr = ~iwait (λ v → prf (c v) q (rec _ (inj₂ (lsuc-retFree rf _
+        comml {⟨ a ⟩} (p' ↑) rf tr = prf p' q (rec (inj₂ (lsuc-retFree rf _ , inj₁ [ ( a , tr) ])))
+        comml {⟨ a ⟩} (wait B c) rf tr = ~iwait (λ v → prf (c v) q (rec (inj₂ (lsuc-retFree rf _
                                          , inj₁ (( ι v , ⇒-inp v c) ∷  [(a , tr)])))))
-        comml {τ} (p' ↑) retFreeτ tr = prf p' q (rec _ (inj₁ ≤-refl))
-        comml {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf (c v) q (rec _ (inj₁ ≤-refl)))
+        comml {τ} (p' ↑) retFreeτ tr = prf p' q (rec (inj₁ ≤-refl))
+        comml {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf (c v) q (rec (inj₁ ≤-refl)))
     right _ _ | inj₂ (l' , retFreeτ , r , _ , refl)
                 | inj₂ (BSSync {p' = p'} {q' = q'} {v1 = v1} {v2 = v2} {e1 = e1} {e2 = e2} tr1 tr2 tr)
-     = let b = prf (q' v2) (p' v1) (rec _ (inj₂ (refl , inj₁ ( (-, ⇒-inp v2 q') ∷ [ -, tr2 ]))))
+     = let b = prf (q' v2) (p' v1) (rec (inj₂ (refl , inj₁ ( (-, ⇒-inp v2 q') ∷ [ -, tr2 ]))))
        in _ , ∥-stepBoth (BSSync tr2 tr1 (⇄-sym _ _ tr)) , ~isuc b
 
 ≲i∥-comm : ∀ {i A B E L} {{_ : Ord A}} {{_ : Ord B}} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞)

@@ -1,4 +1,4 @@
-{-# OPTIONS --copatterns --sized-types --guardedness #-}
+{-# OPTIONS --copatterns --sized-types --guardedness --large-indices #-}
 
 -------------------------------------------------------------------------
 -- Skew indexed strong bisimilarity is defined as indexed
@@ -19,7 +19,7 @@ open import Relation.Nullary
 open import Data.Nat
 open import Data.Nat.Properties
 open import Data.Product renaming (map to map×)
-open import Data.Unit hiding (_≤_)
+open import Data.Unit
 open import Data.Empty
 open import Data.Fin hiding (_≤_ ; _<_ ; _≤?_)
 open import Induction.WellFounded
@@ -100,22 +100,43 @@ safeP⇒ (safeP-wait p) (⇒-inp r _) = safeP↑ (p r)
           where left : ∀ {l p'} → p [ l ]⇒ p' → ∃[ l' ] ∃[ q' ] l ⊑ l' × q [ l' ]⇒ q' × p' ≲̂[ lsuc l i ] q'
                 left trans with ≲ileft b (safeP-lsafe s) trans
                 ... | l' , q' , leq , trans' , ibi'
-                  = l' , q' , leq , trans' , prf (rec _ (recStep trans)) (safeP⇒ s trans) ibi'
+                  = l' , q' , leq , trans' , prf (rec (recStep trans)) (safeP⇒ s trans) ibi'
                 right : ∀ {l q'} → q [ l ]⇒ q' → ∃[ l' ] ∃[ p' ] l' ⊑ l × p [ l' ]⇒ p' × p' ≲̂[ lsuc l i ] q'
                 right trans with ≲iright b (safeP-lsafe s) trans
                 ... | l' , q' , leq , trans' , ibi'
-                  = l' , q' , leq , trans' , prf (rec _ (recStep⊑ leq trans')) (safeP⇒ s trans') ibi'
+                  = l' , q' , leq , trans' , prf (rec (recStep⊑ leq trans')) (safeP⇒ s trans') ibi'
+
+-----------------------------
+-- step-indexed version of --
+-- Proposition 1 (ii)      --
+-----------------------------
 
 ⊥~i-~i : ∀ {E A i P} {p q : CTree⊥ E A ∞} → safeP P p → p ⊥~[ i ] q → p ~[ i ] q
 ⊥~i-~i = ⊥≲i-≲i {{≡-Ord}}
 
-
+-----------------------------
+-- step-indexed version of --
+-- Proposition 1 (i)       --
+-----------------------------
 ~i-⊥~i : ∀ {E A i } {p q : CTree⊥ E A ∞} → p ~[ i ] q → p ⊥~[ i ] q
 ~i-⊥~i = ~ilift
+
+-----------------------------
+-- step-indexed version of --
+-- Proposition 2 (i)       --
+-----------------------------
+
+⊥~i-⊥≲i : ∀ {E A i } {{_ : Ord A}} {p q : CTree⊥ E A ∞} → p ⊥~[ i ] q → p ⊥≲[ i ] q
+⊥~i-⊥≲i = ~i-≲i
+
 
 ≲i-⊥≲i : ∀ {E A i } {{_ : Ord A}} {p q : CTree⊥ E A ∞} → p ≲[ i ] q → p ⊥≲[ i ] q
 ≲i-⊥≲i = ≲ilift
 
+-----------------------------
+-- step-indexed version of --
+-- Proposition 2 (ii)      --
+-----------------------------
 
 ⊥≲i-⊥~i : ∀ {E A i} {{_ : Ord A}} {p q : CTree⊥ E A ∞} → (∀ {x y : A} → x ⊑ y → x ≡ y) → p ⊥≲[ i ] q → p ⊥~[ i ] q
 ⊥≲i-⊥~i = ≲i-~i
@@ -284,6 +305,18 @@ safeP⇒ (safeP-wait p) (⇒-inp r _) = safeP↑ (p r)
              (b : p ⊥~̂[ i ] q) → {f : A → B} → map' f p ⊥~̂[ i ] map' f q
 ⊥~imap-cong = ~imap-cong
 
+-----------------------------
+-- step-indexed version of --
+-- Corollary 3             --
+-----------------------------
+
+⊥≲i-~i : ∀ {E A B P i} {{_ : Ord A}} {{_ : Ord B}} {p q : CTree⊥ E A ∞} {f : A → B} 
+  → safeP P p → (∀ {x y : B} → x ⊑ y → x ≡ y) → (∀ {a b} → a ⊑ b → f a ⊑ f b) → p ⊥≲[ i ] q → map f p ~[ i ] map f q
+⊥≲i-~i {i = i} {p = p} {q} {f} S ⊑-≡ f⊑ le = ≲i-~i ⊑-≡ ≲map
+  where ⊥≲map : map f p ⊥≲[ i ] map f q
+        ⊥≲map = ⊥≲imap-cong le f⊑
+        ≲map : map f p ≲[ i ] map f q
+        ≲map = ⊥≲i-≲i (safeP-map S (λ p → tt)) ⊥≲map
 
 open InterpStep
 
@@ -324,27 +357,27 @@ interpSt-lsafe ls tr tr' = ls (interpSt-eff tr tr')
     left ls tr with interpSt-step {p = p} tr
     ... | inj₁ (p' , l' , ef , tr' , refl) rewrite effFree-lsuc {i = i} ef with ≲ileft bi (interpSt⊥-lsafe ls) tr'
     ... | l' , q' , leq , tr'' , bi' with (⊑-effFree leq ef)
-    ... | l'' , leq' , ef' = l'' , _ , leq'  , interpSt-effFree ef' tr'' , prf (rec _ (recStep⁺ tr')) bi'
+    ... | l'' , leq' , ef' = l'' , _ , leq'  , interpSt-effFree ef' tr'' , prf (rec (recStep⁺ tr')) bi'
     left ls tr | inj₂ (B , stuckEff , c , tr1 , tr2)
       with (isEffPredε .stuckEff ()) ← interpSt⊥-lsafe ls tr1
     left ls tr | inj₂ (B , notStuck e , c , tr1 , tr2)
       with l' , wc' , ⊑ε _ , tr1' , bi1 ← ≲ileft bi (interpSt⊥-lsafe ls) tr1 with c' , refl ← ⇒-ε-wait tr1'
       with l' , fq' , leq , tr2' , bi2 ← ≲ileft (≲i>>=-cong-r (f st e)  (λ (x , s') →
-           prf (rec _ (inj₂ (refl , (-, ⇒-inp x c) ∷ [ -, tr1 ] ))) (≲iwait' bi1 x))) (interpSt-lsafe ls tr1) tr2
+           prf (rec (inj₂ (refl , (-, ⇒-inp x c) ∷ [ -, tr1 ] ))) (≲iwait' bi1 x))) (interpSt-lsafe ls tr1) tr2
            = -, -, leq , interpSt-eff tr1' tr2' , bi2    
     right : lsafe NotStuckEff (interpSt⊥' st f p) → ∀ {l fq'} → interpSt⊥' st f q [ l ]⇒ fq' → 
       ∃[ l' ] ∃[ fp' ] l' ⊑ l × interpSt⊥' st f p [ l' ]⇒ fp' × fp' ⊥≲̂[ lsuc l i ] fq'
     right ls tr with interpSt-step {p = q} tr
     ... | inj₁ (p' , l' , ef , tr' , refl) rewrite effFree-lsuc {i = i} ef with ≲iright bi (interpSt⊥-lsafe ls) tr'
     ... | l' , q' , leq , tr'' , bi' with (⊑-effFree' leq ef)
-    ... | l'' , leq' , ef' = l'' , _ , leq' , interpSt-effFree ef' tr'' , prf (rec _ (recStep⊑⁺ leq tr'')) bi'
+    ... | l'' , leq' , ef' = l'' , _ , leq' , interpSt-effFree ef' tr'' , prf (rec (recStep⊑⁺ leq tr'')) bi'
     right ls tr | inj₂ (B , stuckEff , c , tr1 , tr2)
       with l' , wc' , ⊑ε _ , tr1' , bi1 ← ≲iright bi (interpSt⊥-lsafe ls) tr1
       with (isEffPredε .stuckEff ()) ← interpSt⊥-lsafe ls tr1'
     right ls tr | inj₂ (B , notStuck e , c , tr1 , tr2)
       with l' , wc , ⊑ε _ , tr1' , bi1 ← ≲iright bi (interpSt⊥-lsafe ls) tr1 with c , refl ← ⇒-ε-wait tr1'
       with l'' , fp' , leq , tr2' , bi2 ← ≲iright (≲i>>=-cong-r (f st e)  (λ (x , s') →
-           prf (rec _ (inj₂ (refl , (-, ⇒-inp x c) ∷ [ -, tr1' ] ))) (≲iwait' bi1 x))) (interpSt-lsafe ls tr1') tr2
+           prf (rec (inj₂ (refl , (-, ⇒-inp x c) ∷ [ -, tr1' ] ))) (≲iwait' bi1 x))) (interpSt-lsafe ls tr1') tr2
            = -, -, leq , interpSt-eff tr1' tr2' , bi2
 
 ⊥~iinterpSt⊥-cong' : ∀ {i E F A S} {p q : CTree⊥' E A} {st : S} {f : ∀ {B} → S → E B → CTree⊥ F (B × S) ∞}

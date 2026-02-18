@@ -104,32 +104,32 @@ rightStepWait (RS' retFreeε tr) with p' , refl ← ⇒-ε-wait tr = p' , tr , r
     ... | inj₁ (inj₁ (LS' rf' tr'')) =  _ ,
       ∥⃗-stepLeft (LS' (retFree-trans rf rf') tr'') ,  assoc1 _ (retFree-trans rf rf') tr''  where
       assoc1 : ∀ {l'} p' → retFree l l' → p ↑ [ l' ]⇒ p' → (p' ∥⃗₁ q ∥⃗₁ r) ~̂ L [ lsuc l i ] (p' ∥⃗₁ (q ∥⃗ r))
-      assoc1 {⟨ a ⟩} (p ↑) rf tr = prf p q r (rec _ (inj₂ ( lsuc-retFree rf _ , inj₁ [ ( a , tr) ])))
-      assoc1 {τ} (p ↑) retFreeτ tr = prf p q r (rec _ (inj₁ ≤-refl))
+      assoc1 {⟨ a ⟩} (p ↑) rf tr = prf p q r (rec (inj₂ ( lsuc-retFree rf _ , inj₁ [ ( a , tr) ])))
+      assoc1 {τ} (p ↑) retFreeτ tr = prf p q r (rec (inj₁ ≤-refl))
       assoc1 {⟨ a ⟩} (wait B c) rf tr = ~iwait (λ v → prf (c v) q r
-        (rec _ (inj₂ (lsuc-retFree rf _ , inj₁ ( (( ι v , ⇒-inp v c)) ∷  [(a , tr)])))))
-      assoc1 {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf (c v) q r (rec _ (inj₁ ≤-refl)))
+        (rec (inj₂ (lsuc-retFree rf _ , inj₁ ( (( ι v , ⇒-inp v c)) ∷  [(a , tr)])))))
+      assoc1 {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf (c v) q r (rec (inj₁ ≤-refl)))
     ... | inj₁ (inj₂ (RS' rf' tr'')) = _ , 
       ∥⃗-stepRight (RS' (coerce-retFree (retFree-trans rf rf'))
         (∥⃗-stepLeft (LS' (coerce-retFree' (retFree-trans rf rf')) tr''))) , assoc21 _ (retFree-trans rf rf') tr'' where
           assoc21 : ∀ {l'} q' → retFree l l' → q ↑ [ l' ]⇒ q' → (p ∥⃗₂ q' ∥⃗₁ r) ~̂ L [ lsuc l i ] (p ∥⃗₂ (q' ∥⃗₁ r))
-          assoc21 {⟨ a ⟩} (q ↑) rf tr = prf p q r (rec _ (inj₂ ( lsuc-retFree rf _ , inj₂ (refl , inj₁ [ ( a , tr) ]) )))
-          assoc21 {τ} (q ↑) retFreeτ tr = prf p q r (rec _ (inj₁ ≤-refl))
+          assoc21 {⟨ a ⟩} (q ↑) rf tr = prf p q r (rec (inj₂ ( lsuc-retFree rf _ , inj₂ (refl , inj₁ [ ( a , tr) ]) )))
+          assoc21 {τ} (q ↑) retFreeτ tr = prf p q r (rec (inj₁ ≤-refl))
           assoc21 {⟨ a ⟩} (wait B c) rf tr = ~iwait (λ v → prf p (c v) r
-            (rec _ (inj₂ (lsuc-retFree rf _ , inj₂ (refl , inj₁ ( (( ι v , ⇒-inp v c)) ∷  [(a , tr)]))))))
-          assoc21 {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf p (c v) r (rec _ (inj₁ ≤-refl)))
+            (rec (inj₂ (lsuc-retFree rf _ , inj₂ (refl , inj₁ ( (( ι v , ⇒-inp v c)) ∷  [(a , tr)]))))))
+          assoc21 {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf p (c v) r (rec (inj₁ ≤-refl)))
 
     left _ tr | inj₁ (inj₁ (LS' retFreeτ tr')) | inj₂ (BSSync' tr1 tr2 tr'')
-      = _ ,  ∥⃗-stepBoth (BSSync' tr1 (∥⃗-stepLeft (LS' retFreeε tr2)) tr'') , prf _ _ r (rec _ (inj₁ ≤-refl))
+      = _ ,  ∥⃗-stepBoth (BSSync' tr1 (∥⃗-stepLeft (LS' retFreeε tr2)) tr'') , prf _ _ r (rec (inj₁ ≤-refl))
         
     left _ {l} tr | inj₁ (inj₂ (RS' rf tr')) = _ , ∥⃗-stepRight (RS' rf (∥⃗-stepRight (RS' (retFree-refl rf) tr'))) ,
                 assoc2 _ rf tr' where
       assoc2 : ∀ {l'} r' → retFree l l' → r ↑ [ l' ]⇒ r' → (p ∥⃗ q ∥⃗₂ r') ~̂ L [ lsuc l i ] (p ∥⃗₂ (q ∥⃗₂ r'))
-      assoc2 {⟨ a ⟩} (r ↑) rf tr = prf p q r (rec _ (inj₂ ( lsuc-retFree rf _ , inj₂ (refl , inj₂ (refl , [ ( a , tr) ])) )))
-      assoc2 {τ} (r ↑) retFreeτ tr = prf p q r (rec _ (inj₁ ≤-refl))
+      assoc2 {⟨ a ⟩} (r ↑) rf tr = prf p q r (rec (inj₂ ( lsuc-retFree rf _ , inj₂ (refl , inj₂ (refl , [ ( a , tr) ])) )))
+      assoc2 {τ} (r ↑) retFreeτ tr = prf p q r (rec (inj₁ ≤-refl))
       assoc2 {⟨ a ⟩} (wait B c) rf tr = ~iwait (λ v → prf p q (c v)
-            (rec _ (inj₂ (lsuc-retFree rf _ , inj₂ (refl , inj₂ (refl , ( (( ι v , ⇒-inp v c)) ∷  [(a , tr)])))))))
-      assoc2 {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf p q (c v) (rec _ (inj₁ ≤-refl)))
+            (rec (inj₂ (lsuc-retFree rf _ , inj₂ (refl , inj₂ (refl , ( (( ι v , ⇒-inp v c)) ∷  [(a , tr)])))))))
+      assoc2 {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf p q (c v) (rec (inj₁ ≤-refl)))
     left tr _ | inj₂ (BSRet' tr1 tr2) with ∥⃗-step p q tr1
     ... | inj₁ (inj₁ (LS' () _))
     ... | inj₁ (inj₂ (RS' () _))
@@ -137,47 +137,47 @@ rightStepWait (RS' retFreeε tr) with p' , refl ← ⇒-ε-wait tr = p' , tr , r
     
     left tr _ | inj₂ (BSSync' tr1 tr2 trl) with ∥⃗-step p q tr1
     ... | inj₁ (inj₁ ls) with (p' , tr' , refl) ← leftStepWait ls
-      = _ , ∥⃗-stepBoth (BSSync' tr'  (∥⃗-stepRight (RS' retFreeε tr2)) trl) , prf (p' _) q _ (rec _ (inj₁ ≤-refl)) 
+      = _ , ∥⃗-stepBoth (BSSync' tr'  (∥⃗-stepRight (RS' retFreeε tr2)) trl) , prf (p' _) q _ (rec (inj₁ ≤-refl)) 
     ... | inj₁ (inj₂ rs) with (q' , tr' , refl) ← rightStepWait rs
-      = _ ,  ∥⃗-stepRight (RS' retFreeτ (∥⃗-stepBoth (BSSync' tr' tr2 trl))) , prf p (q' _) _ (rec _ (inj₁ ≤-refl))
+      = _ ,  ∥⃗-stepRight (RS' retFreeτ (∥⃗-stepBoth (BSSync' tr' tr2 trl))) , prf p (q' _) _ (rec (inj₁ ≤-refl))
     right : lsafe L ((p ∥⃗ q ∥⃗ r) ↑) → ∀ {l q' } → ((p ∥⃗ (q ∥⃗ r)) ↑) [ l ]⇒ q' → ∃[ p' ] ((p ∥⃗ q ∥⃗ r) ↑) [ l ]⇒ p' × p' ~̂ L [ lsuc l i ] q'
     right _ {l} tr with ∥⃗-step p (q ∥⃗ r) tr
     right _ {l} tr | inj₁ (inj₂ (RS' rf tr')) with ∥⃗-step q r tr'
     ... | inj₁ (inj₂ (RS' rf' tr'')) = _ ,  ∥⃗-stepRight (RS' (retFree-trans rf rf') tr'')
           , assoc2 _ (retFree-trans rf rf') tr'' where
       assoc2 : ∀ {l'} r' → retFree l l' → r ↑ [ l' ]⇒ r' → (p ∥⃗ q ∥⃗₂ r') ~̂ L [ lsuc l i ] (p ∥⃗₂ (q ∥⃗₂ r'))
-      assoc2 {⟨ a ⟩} (r ↑) rf tr = prf p q r (rec _ (inj₂ ( lsuc-retFree rf _ , inj₂ (refl , inj₂ (refl , [ ( a , tr) ])) )))
-      assoc2 {τ} (r ↑) retFreeτ tr = prf p q r (rec _ (inj₁ ≤-refl))
+      assoc2 {⟨ a ⟩} (r ↑) rf tr = prf p q r (rec (inj₂ ( lsuc-retFree rf _ , inj₂ (refl , inj₂ (refl , [ ( a , tr) ])) )))
+      assoc2 {τ} (r ↑) retFreeτ tr = prf p q r (rec (inj₁ ≤-refl))
       assoc2 {⟨ a ⟩} (wait B c) rf tr = ~iwait (λ v → prf p q (c v)
-            (rec _ (inj₂ (lsuc-retFree rf _ , inj₂ (refl , inj₂ (refl , ( (( ι v , ⇒-inp v c)) ∷  [(a , tr)])))))))
-      assoc2 {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf p q (c v) (rec _ (inj₁ ≤-refl)))
+            (rec (inj₂ (lsuc-retFree rf _ , inj₂ (refl , inj₂ (refl , ( (( ι v , ⇒-inp v c)) ∷  [(a , tr)])))))))
+      assoc2 {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf p q (c v) (rec (inj₁ ≤-refl)))
     ... | inj₁ (inj₁ (LS' rf' tr'')) =  _ , ∥⃗-stepLeft (LS' (coerce-retFree (retFree-trans rf rf'))
         (∥⃗-stepRight (RS' (coerce-retFree' (retFree-trans rf rf')) tr''))) ,  assoc21 _ (retFree-trans rf rf') tr'' where
           assoc21 : ∀ {l'} q' → retFree l l' → q ↑ [ l' ]⇒ q' → (p ∥⃗₂ q' ∥⃗₁ r) ~̂ L [ lsuc l i ] (p ∥⃗₂ (q' ∥⃗₁ r))
-          assoc21 {⟨ a ⟩} (q ↑) rf tr = prf p q r (rec _ (inj₂ ( lsuc-retFree rf _ , inj₂ (refl , inj₁ [ ( a , tr) ]) )))
-          assoc21 {τ} (q ↑) retFreeτ tr = prf p q r (rec _ (inj₁ ≤-refl))
+          assoc21 {⟨ a ⟩} (q ↑) rf tr = prf p q r (rec (inj₂ ( lsuc-retFree rf _ , inj₂ (refl , inj₁ [ ( a , tr) ]) )))
+          assoc21 {τ} (q ↑) retFreeτ tr = prf p q r (rec (inj₁ ≤-refl))
           assoc21 {⟨ a ⟩} (wait B c) rf tr = ~iwait (λ v → prf p (c v) r
-            (rec _ (inj₂ (lsuc-retFree rf _ , inj₂ (refl , inj₁ ( (( ι v , ⇒-inp v c)) ∷  [(a , tr)]))))))
-          assoc21 {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf p (c v) r (rec _ (inj₁ ≤-refl)))
+            (rec (inj₂ (lsuc-retFree rf _ , inj₂ (refl , inj₁ ( (( ι v , ⇒-inp v c)) ∷  [(a , tr)]))))))
+          assoc21 {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf p (c v) r (rec (inj₁ ≤-refl)))
     right _ tr | inj₁ (inj₂ (RS' retFreeτ tr')) | inj₂ (BSSync' tr1 tr2 trl)
-      = _ , ∥⃗-stepBoth (BSSync' (∥⃗-stepRight (RS' retFreeε tr1)) tr2 trl) , prf p _ _ (rec _ (inj₁ ≤-refl))
+      = _ , ∥⃗-stepBoth (BSSync' (∥⃗-stepRight (RS' retFreeε tr1)) tr2 trl) , prf p _ _ (rec (inj₁ ≤-refl))
     right _ {l} tr | inj₁ (inj₁ (LS' rf tr')) = _ ,
           ∥⃗-stepLeft (LS' (coerce-retFree rf) (∥⃗-stepLeft (LS' (coerce-retFree' rf) tr'))) , assoc1 _ rf tr' where
       assoc1 : ∀ {l'} p' → retFree l l' → p ↑ [ l' ]⇒ p' → (p' ∥⃗₁ q ∥⃗₁ r) ~̂ L [ lsuc l i ] (p' ∥⃗₁ (q ∥⃗ r))
-      assoc1 {⟨ a ⟩} (p ↑) rf tr = prf p q r (rec _ (inj₂ ( lsuc-retFree rf _ , inj₁ [ ( a , tr) ])))
-      assoc1 {τ} (p ↑) retFreeτ tr = prf p q r (rec _ (inj₁ ≤-refl))
+      assoc1 {⟨ a ⟩} (p ↑) rf tr = prf p q r (rec (inj₂ ( lsuc-retFree rf _ , inj₁ [ ( a , tr) ])))
+      assoc1 {τ} (p ↑) retFreeτ tr = prf p q r (rec (inj₁ ≤-refl))
       assoc1 {⟨ a ⟩} (wait B c) rf tr = ~iwait (λ v → prf (c v) q r
-        (rec _ (inj₂ (lsuc-retFree rf _ , inj₁ ( (( ι v , ⇒-inp v c)) ∷  [(a , tr)])))))
-      assoc1 {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf (c v) q r (rec _ (inj₁ ≤-refl)))
+        (rec (inj₂ (lsuc-retFree rf _ , inj₁ ( (( ι v , ⇒-inp v c)) ∷  [(a , tr)])))))
+      assoc1 {τ} (wait B c) retFreeτ tr = ~iwait (λ v → prf (c v) q r (rec (inj₁ ≤-refl)))
     right _ tr | inj₂ (BSRet' tr1 tr2) with ∥⃗-step q r tr2
     ... | inj₁ (inj₁ (LS' () _))
     ... | inj₁ (inj₂ (RS' () _))
     ... | inj₂ (BSRet' tr3 tr4) = _ , ∥⃗-stepBoth (BSRet' (∥⃗-stepBoth (BSRet' tr1 tr3)) tr4) , ~irefl
     right _ tr | inj₂ (BSSync' tr1 tr2 trl) with ∥⃗-step q r tr2
     ... | inj₁ (inj₁ ls) with (q' , tr' , refl) ← leftStepWait ls
-      = _ , ∥⃗-stepLeft (LS' retFreeτ (∥⃗-stepBoth (BSSync' tr1 tr' trl))) , prf _ (q' _) r (rec _ (inj₁ ≤-refl)) 
+      = _ , ∥⃗-stepLeft (LS' retFreeτ (∥⃗-stepBoth (BSSync' tr1 tr' trl))) , prf _ (q' _) r (rec (inj₁ ≤-refl)) 
     ... | inj₁ (inj₂ rs) with (r' , tr' , refl) ← rightStepWait rs
-      = _ , ∥⃗-stepBoth (BSSync' (∥⃗-stepLeft (LS' retFreeε tr1)) tr' trl) , prf _ q (r' _) (rec _ (inj₁ ≤-refl)) 
+      = _ , ∥⃗-stepBoth (BSSync' (∥⃗-stepLeft (LS' retFreeε tr1)) tr' trl) , prf _ q (r' _) (rec (inj₁ ≤-refl)) 
 
 ≲i∥⃗-assoc : ∀ {i A B C E L} {{_ : Ord C}} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞) (r : CTree E C ∞)
   → (p ∥⃗ q) ∥⃗ r ≲ L [ i ] p ∥⃗ (q ∥⃗ r)

@@ -1,5 +1,5 @@
 
-{-# OPTIONS --copatterns --sized-types --guardedness #-}
+{-# OPTIONS --copatterns --sized-types --guardedness --large-indices #-}
 
 -- This module defines an effect that allows us to express a stuck
 -- computation in choice trees. This is relevant for the formulation

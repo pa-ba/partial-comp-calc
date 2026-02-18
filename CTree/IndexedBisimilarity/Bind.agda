@@ -26,7 +26,7 @@ open import Relation.Nullary
             (a >>= k) ≲ L [ i ] (a >>= l)
 ≲i>>=-cong-r {0} _ _ = ≲izero
 ≲i>>=-cong-r (now v) h =  h v
-≲i>>=-cong-r {suc i} (later p) h = ≲ilater (≲i>>=-cong-r (force p) λ x → ≲idown (≤-step ≤-refl) (h x))
+≲i>>=-cong-r {suc i} (later p) h = ≲ilater (≲i>>=-cong-r (force p) λ x → ≲idown (m≤n⇒m≤1+n ≤-refl) (h x))
 ≲i>>=-cong-r (p ⊕ q) h = ≲i⊕-cong (≲i>>=-cong-r p h) (≲i>>=-cong-r q h)
 ≲i>>=-cong-r ∅ h = ≲irefl
 ≲i>>=-cong-r (eff e c) h = ≲ieff e λ r → ≲i>>=-cong-r (c r) h
@@ -97,15 +97,15 @@ open import Relation.Nullary
 >>=-lsafe-r : ∀ {E L A B v} {p p' : CTree' E A} {f : A → CTree E B ∞} → lsafe L (p >>=' f) → p [ ⟨ ρ v ⟩ ]⇒ p' → lsafe L (f v ↑)
 >>=-lsafe-r {f = f} ls ptr fvtr = ls (>>=-step1 f ptr fvtr)
 
-≲i>>=-cong : ∀ {i E A B L} {{_ : Ord A}} {{_ : Ord B}} {p q : CTree' E A} (b : p ≲̂ L [ i ] q)
+≲i>>=-cong : ∀ {i E A B L} {{OA : Ord A}} {{OB : Ord B}} {p q : CTree' E A} (b : p ≲̂ L [ i ] q)
               {k k' : A → CTree E B ∞} →
               (h : ∀ {a b} → a ⊑ b → (k a) ≲ L [ i ] (k' b)) →
               (p >>=' k) ≲̂ L [ i ] (q >>=' k')
 ≲i>>=-cong {i} b h = prf i (<×⇐-wf _) b h where
-  prf : ∀ {E A B L} {{_ : Ord A}} {{_ : Ord B}} {p q : CTree' E A} i (ac : Acc (×-Lex _≡_ _<_ _⇐_) (i , p)) (b : p ≲̂ L [ i ] q)
+  prf : ∀ {E A B L} {{OA : Ord A}} {{OB : Ord B}} {p q : CTree' E A} i (ac : Acc (×-Lex _≡_ _<_ _⇐_) (i , p)) (b : p ≲̂ L [ i ] q)
           {k k' : A → CTree E B ∞}  → (h : ∀ {a b} → a ⊑ b → (k a) ≲ L [ i ] (k' b)) → (p >>=' k) ≲̂ L [ i ] (q >>=' k')
   prf zero _ b h = ≲izero
-  prf {L = L} {p = p} {q} (suc i) (acc rec) b {k} {k'} h = ≲istep left right where
+  prf {L = L} {{OA}} {{OB}} {p = p} {q} (suc i) (acc rec) b {k} {k'} h = ≲istep left right where
     left : lsafe L (p >>=' k) → ∀ {l pk'} → p >>=' k [ l ]⇒ pk'
       → ∃[ l' ] ∃[ qk' ] l ⊑ l' × q >>=' k' [ l' ]⇒ qk' × pk' ≲̂ L [ lsuc l i ] qk'
     left ls trans with >>=-step p k trans
@@ -115,11 +115,11 @@ open import Relation.Nullary
     left ls {⟨ a ⟩} trans | inj₂ (l' , rf , p' , trans' , refl) with retFreeAction rf
     ... | a' , refl with ≲ileft b (>>=-lsafe-l ls) trans'
     ... | l' ,  q' , leq , trans'' , b'' rewrite sym (⊑-retFree rf leq)
-      = _ , _ , ⊑-refl ,  >>=-step2 q k' rf trans'' ,  prf (suc i) (rec (suc i , p') (inj₂(refl , _ , trans'))) b'' h 
+      = _ , _ , ⊑-refl {{LabOrd {{OB}}}} ,  >>=-step2 q k' rf trans'' ,  prf (suc i) (rec {(suc i , p')} (inj₂(refl , _ , trans'))) b'' h 
 
     left ls {τ} trans | inj₂ (.τ , retFreeτ , p' , trans' , refl)  with ≲ileft b (>>=-lsafe-l ls) trans'
     ... | τ , q' , ⊑τ , trans'' , b'' =  _ , _ , ⊑τ , >>=-step2 q k' retFreeτ trans''
-      ,  ≲itrans ≲irefl (prf i (rec (i , p') (inj₁ ≤-refl)) b'' λ le → ≲isuc (h le)) 
+      ,  ≲itrans ≲irefl (prf i (rec {(i , p')} (inj₁ ≤-refl)) b'' λ le → ≲isuc (h le)) 
 
     right : lsafe L (p >>=' k) → ∀ {l qk'} → q >>=' k' [ l ]⇒ qk'
       → ∃[ l' ] ∃[ pk' ] l' ⊑ l × p >>=' k [ l' ]⇒ pk' × pk' ≲̂ L [ lsuc l i ] qk'
@@ -130,10 +130,10 @@ open import Relation.Nullary
     right ls {⟨ a ⟩} trans | inj₂ (l' , rf , q' , trans' , refl) with retFreeAction rf
     ... | a' , refl with ≲iright b (>>=-lsafe-l ls) trans' 
     ... | l' , p' , leq , trans'' , b'' rewrite ⊑-retFree' rf leq
-      =  _ , _ , ⊑-refl , >>=-step2 p k rf trans'' , prf (suc i) (rec (suc i , p') (inj₂ (refl , _ , trans''))) b'' h
+      =  _ , _ , ⊑-refl {{LabOrd {{OB}}}} , >>=-step2 p k rf trans'' , prf (suc i) (rec {(suc i , p')} (inj₂ (refl , _ , trans''))) b'' h
     right ls {τ} trans | inj₂ (.τ , retFreeτ , q' , trans' , refl)  with ≲iright b (>>=-lsafe-l ls) trans'
     ... | τ , p' , ⊑τ , trans'' , b'' =
-      _ , _ , ⊑τ , >>=-step2 p k retFreeτ trans'' , prf i (rec (i , p') (inj₁ ≤-refl)) b'' λ le → ≲isuc (h le)
+      _ , _ , ⊑τ , >>=-step2 p k retFreeτ trans'' , prf i (rec {(i , p')} (inj₁ ≤-refl)) b'' λ le → ≲isuc (h le)
 
 ~i>>=-cong : ∀ {i E A B L}  {p q : CTree' E A} (b : p ~̂ L [ i ] q)
               {k k' : A → CTree E B ∞} →

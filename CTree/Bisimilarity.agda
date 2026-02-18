@@ -90,10 +90,10 @@ _~̂_ = _≲̂_  {{≡-Ord}}
   prf {L = L} {i = suc i} {p} {q} (acc rec) b = ≲istep left right where
     left : lsafe L p → ∀ {l p'} → p [ l ]⇒ p' → ∃[ l' ] ∃[ q' ] (l ⊑ l' × q [ l' ]⇒ q' × p' ≲̂ L [ lsuc l i ] q')
     left ls {p'} tr with l' , q' , leq , tr' , b' ← ≲left b ls tr
-      = l' , q' , leq , tr' , prf (rec _ (recStep tr)) b'
+      = l' , q' , leq , tr' , prf (rec (recStep tr)) b'
     right : lsafe L p → ∀ {l q'} → q [ l ]⇒ q' → ∃[ l' ] ∃[ p' ] l' ⊑ l × p [ l' ]⇒ p' × p' ≲̂ L [ lsuc l i ] q'
     right ls {q'} tr with l' , p' , leq , tr' , b' ← ≲right b ls tr
-      = l' , p' , leq , tr' , prf (rec _ (recStep⊑ leq tr')) b'
+      = l' , p' , leq , tr' , prf (rec (recStep⊑ leq tr')) b'
 
 
 ~-~i : ∀ {E L A i} {p q : CTree' E A} → (p ~̂ L ! q) → p ~̂ L [ i ] q

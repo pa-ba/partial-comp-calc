@@ -17,7 +17,7 @@ open import Agda.Builtin.Nat
 open import Data.Bool 
 open import Data.Product
 open import Data.List hiding (lookup)
-open import Function
+open import Function hiding (force)
 
 ---------------------
 -- Source language --

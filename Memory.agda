@@ -110,11 +110,11 @@ data _⊑M_  {A : Set} {{_ : Ord A}} : (Maybe A) → (Maybe A) → Set where
 
 
 
-⊑M-refl : ∀ {A : Set} {{_ : Ord A}} {m : Maybe A} → m ⊑M m
+⊑M-refl : ∀ {A : Set} {{O : Ord A}} {m : Maybe A} → m ⊑M m
 ⊑M-refl {m = nothing} = ⊑M-nothing
-⊑M-refl {m = just x} = ⊑M-just ⊑-refl
+⊑M-refl {{O}} {m = just x} = ⊑M-just (⊑-refl {{O}})
 
-⊑M-trans : ∀ {A : Set} {{_ : Ord A}}  {m n u : Maybe A} → m ⊑M n → n ⊑M u → m ⊑M u
+⊑M-trans : ∀ {A : Set} {{O : Ord A}}  {m n u : Maybe A} → m ⊑M n → n ⊑M u → m ⊑M u
 ⊑M-trans ⊑M-nothing K =  ⊑M-nothing
-⊑M-trans (⊑M-just x) (⊑M-just y) =  ⊑M-just (⊑-trans x y)
+⊑M-trans {{O}} (⊑M-just x) (⊑M-just y) =  ⊑M-just (⊑-trans {{O}} x y)
     

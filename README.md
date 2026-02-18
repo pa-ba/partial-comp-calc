@@ -1,13 +1,13 @@
-This repository contains the supplementary material for the paper
-*Partial Compiler Calculation with Skew Bisimilarity*. The material
-includes Agda formalisations of all calculations in the paper along
-with the all the required background theory, i.e. definitions and laws
-for (ordered) skew bisimilarity, and additional calculations mentioned
-in the paper.
+[*Safety First: How to Safely Disregard Unsafe Behaviour in Compiler
+Calculations*](https://bahr.io/pubs/entries/partialcalc.html). The
+material includes Agda formalisations of all calculations in the paper
+along with the all the required background theory, i.e. definitions
+and laws for (ordered) skew bisimilarity, and additional calculations
+mentioned in the paper.
 
 To typecheck all Agda files, use the included makefile by simply
 invoking `make` in this directory. All source files in this directory
-have been typechecked using version 2.6.3 of Agda and version 1.7.2 of
+have been typechecked using version 2.8.0 of Agda and version 2.3 of
 the Agda standard library.
 
 # Files
@@ -28,7 +28,8 @@ definitions and properties concerning choice trees:
   properties.
 - [SkewBisimilarity.agda](CTree/SkewBisimilarity.agda): Definition of
   the skew bisimilarity relation (including its ordered variant) and
-  its properties.
+  its properties (including Proposition 1, Proposition 2, and
+  Corollary 3).
 - [IndexedBisimilarity.agda](CTree/IndexedBisimilarity.agda):
   Definition of the step-indexed bisimilarity relation (including its
   ordered variant) and its properties. This is in fact a formalisation
@@ -37,8 +38,9 @@ definitions and properties concerning choice trees:
   bisimilarity and step-indexed (ordered) skew bisimilarity are
   instances of this generalised version of step-indexed bisimilarity.
 - [SkewIndexedBisimilarity.agda](CTree/SkewIndexedBisimilarity.agda):
-  Definition of the step-indexed skew bisimilarity relation (including its
-  ordered variant) and its properties.
+  Definition of the step-indexed skew bisimilarity relation (including
+  its ordered variant) and its properties (including step-indexed
+  versions of Proposition 1, Proposition 2, and Corollary 3).
 
 ## Codensity Choice Trees
 
@@ -65,8 +67,9 @@ definitions and properties concerning codensity choice trees:
 - [Calculations/Stack/Cond.agda](Calculations/Stack/Cond.agda): Simple
   arithmetic language extended with conditionals (section 2);
   the calculation uses choice trees instead of `Maybe`.
-- [Calculations/Stack/CondPrint.agda](Calculations/Stack/CondPrint.agda): Simple
-  arithmetic language extended with conditionals and print effect (section 4).
+- [Calculations/Stack/CondPrintFlip.agda](Calculations/Stack/CondPrint.agda):
+  Simple arithmetic language extended with conditionals,
+  non-determinism, and print effect (section 4).
 - [Calculations/Memory/Print.agda](Calculations/Memory/Print.agda):
   Simple arithmetic language extended with print effect targeting a
   register machine (section 5).

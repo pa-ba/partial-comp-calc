@@ -17,7 +17,7 @@ open import Data.Bool
 open import Data.Product
 open import Data.List renaming (lookup to lookupL ; map to mapL)
 open import Data.List.Properties
-open import Function
+open import Function hiding (force)
 
 ----------------------------
 -- Source language syntax --
@@ -158,7 +158,6 @@ mutual
                             v2 , σ2 ← eval t2 e σ1
                             later (∞eval t1' (v2 ∷ e') σ2)
   eval Fix e σ = return (CloV (App (Var 0) (Box (Delay (App Fix (Var 0))))) e , σ)
---  eval t (BoxV (Delay (Fix t)) e ∷ e) σ
   eval (Var x) e σ = do v ← lookup e x
                         return (v , σ)
   eval (Box t) e σ = return (BoxV t e , σ)
@@ -357,9 +356,8 @@ lookup-convH zero [] f = ~istuck-refl
 allocS-conv : ∀ {l} {A : Set l} σ (e : HElem) → (f : Location × Store HElem' → A) →
   (let l , σ' = allocS σ e in f (l , convS σ') ) ≡ (f (allocS (convS σ) (convHE e)))
 allocS-conv ⟨ ηN ✓ ηL ⟩ e f
-  rewrite length-map convHE ηN rewrite map-++-commute convHE ηN [ e ]
-  rewrite length-map convHE ηL rewrite map-++-commute convHE ηL [ e ] =  refl
-allocS-conv ⟨ η ⟩ e f rewrite length-map convHE η rewrite map-++-commute convHE η [ e ] =  refl
+  rewrite length-map convHE ηL rewrite map-++ convHE ηL [ e ] =  refl
+allocS-conv ⟨ η ⟩ e f rewrite length-map convHE η rewrite map-++ convHE η [ e ] =  refl
 
 
 --------------------------

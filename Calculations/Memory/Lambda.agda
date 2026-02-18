@@ -12,7 +12,7 @@ open import Data.Nat
 open import Data.Unit
 open import Data.Product hiding (map)
 open import Data.List hiding (map ; lookup)
-open import Function
+open import Function hiding (force)
 
 ---------------------
 -- Source language --
@@ -186,7 +186,7 @@ exec-mono {i = suc i} (APP x c) ⊑l ⊑m = ⊥≲itrans (⊥≲i>>=-assoc (get 
                                       (⊥≲itrans (⊥≲iget->>= ⊑m)
                                       ((⊥≲itrans (~i-⊥≲i (~isym (~i>>=-assoc (get _ x))))
                                         ((⊥≲i>>=-cong-r (get _ x >>= getClo') (λ (c' , e') → 
-                                          ⊥≲ilater (exec-mono c' (⊑L-cons ⊑m ⊑l) ⊑-refl)))))))
+                                          ⊥≲ilater (exec-mono c' (⊑L-cons ⊑m ⊑l) (⊑-refl {{MemoryOrd}}))))))))
 exec-mono (ABS c c') ⊑l ⊑m = exec-mono c' ⊑l ⊑m
 exec-mono HALT ⊑l ⊑m = ⊥≲i⊑ (refl , refl , ⊑l , ⊑m)
 
@@ -252,7 +252,7 @@ spec i (Add x y) {e} {l} {r} {a} {m} {c} F =
       n2 ← eval y e >>= getNum
       exec c (Num' (n1 + n2) , convE e , l  , m))
   ⊥≲⟨ ⊥≲i>>=-cong-r (eval x e >>= getNum) (λ n1 →  ⊥≲i>>=-cong-r (eval y e >>= getNum)
-     (λ n2 → exec-mono c ⊑-refl (⊑-set F))) ⟩
+     (λ n2 → exec-mono c (⊑-refl {{OrdLam}}) (⊑-set F))) ⟩
   (do n1 ← eval x e >>= getNum
       n2 ← eval y e >>= getNum 
       exec c (Num' (n1 + n2) , convE e , l , m #[ r ← Num' n1 ]))
@@ -323,7 +323,7 @@ spec (suc i) (App x y) {e} {l} {r} {a} {m} {c} F =
       later (∞exec (comp x' (next first) RET) (conv v , conv v ∷ convE e' , m ∷ l , empty #[ first ← Clo' c (convE e)])))
   ⊥≲⟨ (⊥≲i>>=-cong-r (eval x e >>= getClo) λ (x' , e') → 
     ⊥≲i>>=-cong-r (eval y e) λ v → ⊥≲ilater (exec-mono (comp x' (next first) RET)
-      (⊑L-cons (⊑-set F) ⊑-refl) ⊑-refl)) ⟩
+      (⊑L-cons (⊑-set F) (⊑-refl {{OrdLam}})) (⊑-refl {{MemoryOrd}}))) ⟩
   (do x' , e' ← eval x e >>= getClo
       v ← eval y e
       later (∞exec (comp x' (next first) RET) (conv v , conv v ∷ convE e' , (m #[ r ← Clo' (comp x' (next first) RET) (convE e') ]) ∷ l , empty #[ first ← Clo' c (convE e)])))
