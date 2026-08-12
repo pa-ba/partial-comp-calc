@@ -1,4 +1,4 @@
-{-# OPTIONS --copatterns --sized-types --guardedness #-}
+{-# OPTIONS --sized-types #-}
 
 module CTree.Safe where
 

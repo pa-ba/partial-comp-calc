@@ -22,12 +22,12 @@ open import Relation.Binary.Construct.Closure.Transitive hiding (map)
 -- transition) or an action ε e (effect e), ι r (input r), ρ v (return
 -- v).
 
-data action (E : Set → Set) (A : Set) : Set₁ where
+data action (E : Set → Set₁) (A : Set) : Set₁ where
   ε : ∀ {B} → E B → action E A
   ι : ∀ {B : Set} → B → action E A
   ρ :  A → action E A
 
-data label (E : Set → Set) (A : Set) : Set₁ where
+data label (E : Set → Set₁) (A : Set) : Set₁ where
   ⟨_⟩ : action E A → label E A
   τ :  label E A
 
@@ -35,12 +35,12 @@ data label (E : Set → Set) (A : Set) : Set₁ where
 -- retFree l l' indicates that l and l' are equal and not of the form
 -- ⟨ρ _⟩.
 
-data retFree {E : Set → Set} {A B : Set} : label E A → label E B → Set₁ where
+data retFree {E : Set → Set₁} {A B : Set} : label E A → label E B → Set₁ where
   retFreeε : ∀ {B} {e : E B} → retFree ⟨ ε e ⟩ ⟨ ε e ⟩
   retFreeι : ∀ {B} {r : B} → retFree ⟨ ι r ⟩ ⟨ ι r ⟩
   retFreeτ : retFree τ τ
 
-retFreeAction : {E : Set → Set} {A B : Set} { a : action E A} {l : label E B}
+retFreeAction : {E : Set → Set₁} {A B : Set} { a : action E A} {l : label E B}
   → retFree ⟨ a ⟩ l -> ∃[ a' ] l ≡ ⟨ a' ⟩
 retFreeAction retFreeε = _ , refl
 retFreeAction retFreeι = _ , refl
@@ -66,18 +66,18 @@ retFree-sym retFreeτ = retFreeτ
 
 
 
-retFreeCoerce : {E : Set → Set} {A B C : Set} {l : label E A} {l' : label E B} → retFree l l' → label E C
+retFreeCoerce : {E : Set → Set₁} {A B C : Set} {l : label E A} {l' : label E B} → retFree l l' → label E C
 retFreeCoerce {l = ⟨ ε v ⟩} retFreeε =  ⟨ ε v ⟩
 retFreeCoerce {l = ⟨ ι v ⟩}retFreeι = ⟨ ι v ⟩
 retFreeCoerce retFreeτ = τ
 
-coerce-retFree : {E : Set → Set} {A B C : Set} {l : label E A} {l' : label E B}
+coerce-retFree : {E : Set → Set₁} {A B C : Set} {l : label E A} {l' : label E B}
   → (rf : retFree l l') → retFree l (retFreeCoerce {C = C} rf)
 coerce-retFree retFreeε = retFreeε
 coerce-retFree retFreeι = retFreeι
 coerce-retFree retFreeτ = retFreeτ
 
-coerce-retFree' : {E : Set → Set} {A B C : Set} {l : label E A} {l' : label E B}
+coerce-retFree' : {E : Set → Set₁} {A B C : Set} {l : label E A} {l' : label E B}
   → (rf : retFree l l') → retFree (retFreeCoerce {C = C} rf) l'
 coerce-retFree' retFreeε = retFreeε
 coerce-retFree' retFreeι = retFreeι

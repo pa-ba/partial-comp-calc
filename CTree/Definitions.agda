@@ -1,4 +1,4 @@
-{-# OPTIONS --copatterns --sized-types #-}
+{-# OPTIONS --sized-types #-}
 
 module CTree.Definitions where
 
@@ -18,14 +18,14 @@ infixl 7 _⊕_
 -- Definition of choice trees.
 
 mutual
-  data CTree (E : Set → Set) (A : Set) (i : Size) : Set₁ where
+  data CTree (E : Set → Set₁) (A : Set) (i : Size) : Set₁ where
     now   : (v : A) → CTree E A i
     later : (p : ∞CTree E A i) → CTree E A i
     _⊕_   : (p q : CTree E A i) → CTree E A i
     ∅     : CTree E A i
     eff   : ∀ {B} → (e : E B) → (c : B → CTree E A i) → CTree E A i
 
-  record ∞CTree (E : Set → Set) (A : Set) (i : Size) : Set₁ where
+  record ∞CTree (E : Set → Set₁) (A : Set) (i : Size) : Set₁ where
     coinductive
     constructor delay
     field
@@ -101,7 +101,7 @@ mutual
 -- This is the standard effect interpretation function (without
 -- state).
 
-interpMap : ∀ {E F : Set → Set} → (∀ {B} → E B → CTree F B ∞) → (∀ {B} → ⊤ → E B → CTree F (B × ⊤) ∞)
+interpMap : ∀ {E F : Set → Set₁} → (∀ {B} → E B → CTree F B ∞) → (∀ {B} → ⊤ → E B → CTree F (B × ⊤) ∞)
 interpMap f s x = map (λ y → y , tt) (f x)
 
 interp : ∀ {i E F A} → (∀ {B} → E B → CTree F B ∞) → CTree E A i → CTree F A i

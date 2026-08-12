@@ -1,4 +1,4 @@
-{-# OPTIONS --sized-types --guardedness #-}
+{-# OPTIONS --sized-types #-}
 
 
 module CTree.IndexedBisimilarity.Parallel.Commutativity where
@@ -23,7 +23,7 @@ open import Data.Maybe hiding (_>>=_) renaming (map to mapMaybe)
 open import Function using (id)
 
 ------------------------------
--- commutativity for ∥ and ∥⃗ --
+-- commutativity for ∥ and ∥ʳ --
 ------------------------------
 
 lmap-swap-swap : ∀ {E A B} (l : label E (A × B)) → lmap swap (lmap swap l) ≡ l
@@ -101,19 +101,19 @@ swap-bijection (x , y) = refl
 
 open ~i-Calculation
 
-~i∥⃗-comm : ∀ {i A B C E} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞) (r : CTree E C ∞)
-  → (p ∥⃗ q) ∥⃗ r ~[ i ] (q ∥⃗ p) ∥⃗ r
-~i∥⃗-comm p q r =
-  p ∥⃗ q ∥⃗ r
-  ~⟨ ~i∥⃗-cong-l (~imap-cong (~i∥-comm p q)) ⟩
-  map proj₂ (map swap (q ∥ p)) ∥⃗ r
-  ~⟨ ~i∥⃗-cong-l (~imap-∘ (q ∥ p)) ⟩
-  map proj₁ (q ∥ p) ∥⃗ r
-  ~⟨ ~isym (~i∥⃗-map-l (q ∥ p) r) ⟩
-  (q ∥ p) ∥⃗ r
-  ~⟨ (~i∥⃗-map-l (q ∥ p) r) ⟩
-  q ∥⃗ p ∥⃗ r ∎
+~i∥ʳ-comm : ∀ {i A B C E} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞) (r : CTree E C ∞)
+  → (p ∥ʳ q) ∥ʳ r ~[ i ] (q ∥ʳ p) ∥ʳ r
+~i∥ʳ-comm p q r =
+  p ∥ʳ q ∥ʳ r
+  ~⟨ ~i∥ʳ-cong-l (~imap-cong (~i∥-comm p q)) ⟩
+  map proj₂ (map swap (q ∥ p)) ∥ʳ r
+  ~⟨ ~i∥ʳ-cong-l (~imap-∘ (q ∥ p)) ⟩
+  map proj₁ (q ∥ p) ∥ʳ r
+  ~⟨ ~isym (~i∥ʳ-map-l (q ∥ p) r) ⟩
+  (q ∥ p) ∥ʳ r
+  ~⟨ (~i∥ʳ-map-l (q ∥ p) r) ⟩
+  q ∥ʳ p ∥ʳ r ∎
 
-≲i∥⃗-comm : ∀ {i A B C E} {{_ : Ord C}} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞) (r : CTree E C ∞)
-  → (p ∥⃗ q) ∥⃗ r ≲[ i ] (q ∥⃗ p) ∥⃗ r
-≲i∥⃗-comm p q r = ~i-≲i (~i∥⃗-comm p q r)
+≲i∥ʳ-comm : ∀ {i A B C E} {{_ : Ord C}} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞) (r : CTree E C ∞)
+  → (p ∥ʳ q) ∥ʳ r ≲[ i ] (q ∥ʳ p) ∥ʳ r
+≲i∥ʳ-comm p q r = ~i-≲i (~i∥ʳ-comm p q r)

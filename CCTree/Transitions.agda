@@ -1,4 +1,4 @@
-{-# OPTIONS --copatterns --sized-types --guardedness #-}
+{-# OPTIONS --sized-types #-}
 
 module CCTree.Transitions where
 open import CCTree.Definitions
@@ -14,7 +14,7 @@ open import Relation.Nullary
 
 -- Generalised choice tree: It is either a choice tree or a choice
 -- tree that is waiting for some input
-data CCTree' E A : Set₁ where
+data CCTree' E A : Set₂ where
   _↑ : (p : CCTree E A ∞) → CCTree' E A
   wait : ∀ (B : Set) → (c : B → CCTree E A ∞) → CCTree' E A
 

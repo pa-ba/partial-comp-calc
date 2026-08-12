@@ -1,4 +1,4 @@
-{-# OPTIONS --sized-types --guardedness --large-indices #-}
+{-# OPTIONS --sized-types #-}
 
 
 -- Properties for the effect handler function `interpSt`.
@@ -28,7 +28,7 @@ open import Relation.Binary.Construct.Closure.Transitive hiding (map)
 -- Proof of the congruence property for `interpSt`
 
 module InterpStep where
-  data effFree {E F : Set → Set} {A : Set} : label E A → label F A → Set where
+  data effFree {E F : Set → Set₁} {A : Set} : label E A → label F A → Set₁ where
     effFreeρ : ∀ {v} → effFree ⟨ ρ v ⟩ ⟨ ρ v ⟩
     effFreeι : ∀ {B} {r : B} → effFree ⟨ ι r ⟩ ⟨ ι r ⟩
     effFreeτ : effFree τ τ

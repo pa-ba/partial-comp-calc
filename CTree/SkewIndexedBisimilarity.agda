@@ -1,4 +1,4 @@
-{-# OPTIONS --copatterns --sized-types --guardedness --large-indices #-}
+{-# OPTIONS --sized-types #-}
 
 -------------------------------------------------------------------------
 -- Skew indexed strong bisimilarity is defined as indexed
@@ -28,8 +28,9 @@ open import Data.Sum hiding (map)
 open import Relation.Binary.Construct.Closure.Transitive hiding (map; symmetric)
 
 
-data NotStuckEff  {E : Set → Set} : Eff (Stuck E) → Set where
-  notStuckEff : ∀ {A} {e : E A} → NotStuckEff (MkEff (notStuck e))
+NotStuckEff : ∀ {E : Set → Set₁} → epred (Stuck E)
+NotStuckEff (MkEff stuckEff)     = ⊥
+NotStuckEff (MkEff (notStuck e)) = ⊤
 
 
 stuck-lsafe : ∀ {E A} {f : ⊥ → CTree⊥ E A ∞} → ¬ lsafe NotStuckEff (eff stuckEff f ↑)
@@ -80,7 +81,7 @@ safeP-lsafe (safeP↑ (splater x)) ⇒-later = isEffPredτ
 safeP-lsafe (safeP↑ (spplus s s')) (⇒-⊕-l tr) = safeP-lsafe (safeP↑ s) tr
 safeP-lsafe (safeP↑ (spplus s s')) (⇒-⊕-r tr) = safeP-lsafe (safeP↑ s') tr
 safeP-lsafe (safeP↑ spempty ) ()
-safeP-lsafe (safeP↑ (speff x)) (⇒-eff (notStuck e) _) = isEffPredε (notStuck e) notStuckEff
+safeP-lsafe (safeP↑ (speff x)) (⇒-eff (notStuck e) _) = isEffPredε (notStuck e) tt
 
 safeP⇒ : ∀ {E A P} {p : CTree⊥' E A} {l p'} → safeP' P p → p [ l ]⇒ p' → safeP' P p'
 safeP⇒ (safeP↑ (spnow Pv)) (⇒-now v) = safeP↑ spempty
@@ -108,18 +109,18 @@ safeP⇒ (safeP-wait p) (⇒-inp r _) = safeP↑ (p r)
 
 -----------------------------
 -- step-indexed version of --
+-- Proposition 1 (i)       --
+-----------------------------
+~i-⊥~i : ∀ {E A i } {p q : CTree⊥ E A ∞} → p ~[ i ] q → p ⊥~[ i ] q
+~i-⊥~i = ~ilift
+
+-----------------------------
+-- step-indexed version of --
 -- Proposition 1 (ii)      --
 -----------------------------
 
 ⊥~i-~i : ∀ {E A i P} {p q : CTree⊥ E A ∞} → safeP P p → p ⊥~[ i ] q → p ~[ i ] q
 ⊥~i-~i = ⊥≲i-≲i {{≡-Ord}}
-
------------------------------
--- step-indexed version of --
--- Proposition 1 (i)       --
------------------------------
-~i-⊥~i : ∀ {E A i } {p q : CTree⊥ E A ∞} → p ~[ i ] q → p ⊥~[ i ] q
-~i-⊥~i = ~ilift
 
 -----------------------------
 -- step-indexed version of --
@@ -333,7 +334,7 @@ interpSt⊥-lsafe : ∀ {E F A S} {p : CTree⊥' E A} {st : S} {f : ∀ {B} → 
 interpSt⊥-lsafe ls {l = ⟨ ε stuckEff ⟩} (⇒-eff .stuckEff c) = ⊥-elim (stuck-lsafe ls)
 interpSt⊥-lsafe ls {l = ⟨ ε stuckEff ⟩} (⇒-⊕-l tr) = interpSt⊥-lsafe (⊕-lsafe-l ls) tr
 interpSt⊥-lsafe ls {l = ⟨ ε stuckEff ⟩} (⇒-⊕-r tr) = interpSt⊥-lsafe (⊕-lsafe-r ls) tr
-interpSt⊥-lsafe ls {l = ⟨ ε (notStuck x) ⟩} tr = isEffPredε (notStuck x) notStuckEff
+interpSt⊥-lsafe ls {l = ⟨ ε (notStuck x) ⟩} tr = isEffPredε (notStuck x) tt
 interpSt⊥-lsafe ls {l = ⟨ ι x ⟩} tr = isEffPredι x
 interpSt⊥-lsafe ls {l = ⟨ ρ x ⟩} tr = isEffPredρ x
 interpSt⊥-lsafe ls {l = τ} tr = isEffPredτ
@@ -424,7 +425,7 @@ ctree⊥ = interpSt tt ctree⊥-map
 ∞ctree⊥ : ∀ {i E A} (p : ∞CTree E A i) → ∞CTree⊥ E A i
 ∞ctree⊥ = ∞interpSt tt ctree⊥-map
 
-data stuckFree {E : Set → Set} {A : Set} : label (Stuck E) A → label E A → Set where
+data stuckFree {E : Set → Set₁} {A : Set} : label (Stuck E) A → label E A → Set₁ where
   stuckFreeε : ∀ {B} {e : E B} → stuckFree ⟨ ε (notStuck e) ⟩ ⟨ ε e ⟩
   stuckFreeι : ∀ {B} {r : B} → stuckFree ⟨ ι r ⟩ ⟨ ι r ⟩
   stuckFreeρ : ∀ {v} → stuckFree ⟨ ρ v ⟩ ⟨ ρ v ⟩
@@ -460,7 +461,7 @@ ctree⊥-now : ∀ { E A B} {p : CTree' E (A × B)} {v w} → ctree⊥' p ≡ (n
 ctree⊥-now {p = now .(_ , _) ↑} refl = refl
 
 instance
-  StuckConcurrent : ∀ {E : Set → Set} → {{Concurrent E}} → Concurrent (Stuck E)
+  StuckConcurrent : ∀ {E : Set → Set₁} → {{Concurrent E}} → Concurrent (Stuck E)
   _⇄_ ⦃ StuckConcurrent ⦄ stuckEff stuckEff = ∅
   _⇄_ ⦃ StuckConcurrent ⦄ stuckEff (notStuck x) = ∅
   _⇄_ ⦃ StuckConcurrent ⦄ (notStuck x) stuckEff = ∅
@@ -475,15 +476,15 @@ instance
     = refl ,  v' , refl
 
 mutual
-  safeP-ctree⊥ :  ∀ {E A} (p : CTree E A ∞) → safeP (λ _ → ⊤) (ctree⊥ p)
+  safeP-ctree⊥ :  ∀ {i E A} (p : CTree E A ∞) → safeP {i} (λ _ → ⊤) (ctree⊥ p)
   safeP-ctree⊥ (now v) = spnow tt
   safeP-ctree⊥ (later p) = splater (∞safeP-ctree⊥ p)
   safeP-ctree⊥ (p ⊕ q) = spplus (safeP-ctree⊥ p) (safeP-ctree⊥ q)
   safeP-ctree⊥ ∅ = spempty
   safeP-ctree⊥ (eff e c) = speff (λ r → safeP-ctree⊥ (c r))
 
-  ∞safeP-ctree⊥ :  ∀ {E A} (p : ∞CTree E A ∞) → ∞safeP (λ _ → ⊤) (∞ctree⊥ p)
-  spforce (∞safeP-ctree⊥ p) = safeP-ctree⊥ (force p)
+  ∞safeP-ctree⊥ :  ∀ {i E A} (p : ∞CTree E A ∞) → ∞safeP {i} (λ _ → ⊤) (∞ctree⊥ p)
+  spforce (∞safeP-ctree⊥ p) {j} = safeP-ctree⊥ {j} (force p)
 
 mutual
   safeP-∥ : ∀ {i A B E p q} {P : A → Set} {Q : B → Set} {{_ : Concurrent E}} → safeP {i} {E} {A} P p → safeP {i} {E} {B} Q q
@@ -542,18 +543,18 @@ mutual
     → ∞safeP {i} (λ { (x , y) → P x × Q y}) (p ∥∞ q)
   spforce (safeP-∥∞ sp sq) = (safeP-∥ sp (spforce sq))
 
-  safeP-∥⃗ : ∀ {i A B E p q} {P : B → Set} {{_ : Concurrent E}} → safeP {i} {E} {A} (λ _ → ⊤) p → safeP {i} {E} {B} P q
-    → safeP {i} P (p ∥⃗ q)
-  safeP-∥⃗ sp sq = safeP-map (safeP-∥ sp sq) (λ Pv → proj₂ Pv)
+  safeP-∥ʳ : ∀ {i A B E p q} {P : B → Set} {{_ : Concurrent E}} → safeP {i} {E} {A} (λ _ → ⊤) p → safeP {i} {E} {B} P q
+    → safeP {i} P (p ∥ʳ q)
+  safeP-∥ʳ sp sq = safeP-map (safeP-∥ sp sq) (λ Pv → proj₂ Pv)
 
 
-⊥~ireturn-∥⃗ : ∀ {i A B E} {{_ : Concurrent E}} {v : A} {p : CTree⊥ E B ∞} 
-  → return v ∥⃗ p ⊥~[ i ] p
-⊥~ireturn-∥⃗ = ~ireturn-∥⃗
+⊥~ireturn-∥ʳ : ∀ {i A B E} {{_ : Concurrent E}} {v : A} {p : CTree⊥ E B ∞} 
+  → return v ∥ʳ p ⊥~[ i ] p
+⊥~ireturn-∥ʳ = ~ireturn-∥ʳ
 
-⊥≲ireturn-∥⃗ : ∀ {i A B E} {{_ : Ord B}} {{_ : Concurrent E}} {v : A} {p : CTree⊥ E B ∞} 
-  → return v ∥⃗ p ⊥≲[ i ] p
-⊥≲ireturn-∥⃗ = ≲ireturn-∥⃗
+⊥≲ireturn-∥ʳ : ∀ {i A B E} {{_ : Ord B}} {{_ : Concurrent E}} {v : A} {p : CTree⊥ E B ∞} 
+  → return v ∥ʳ p ⊥≲[ i ] p
+⊥≲ireturn-∥ʳ = ≲ireturn-∥ʳ
 
 
 ⊥≲i∥-cong : ∀ {i A B E} {{_ : Ord A}} {{_ : Ord B}} {{EC : Concurrent E}} {p p' : CTree⊥ E A ∞}{q q' : CTree⊥ E B ∞}
@@ -562,7 +563,7 @@ mutual
   where le : ∀ {A B} {e1 : Stuck E A} {e2 : Stuck E B} {p} → (e1 ⇄ e2) [ τ ]=> p → NotStuckEff (MkEff e1)
         le {e1 = stuckEff} {stuckEff} ()
         le {e1 = stuckEff} {notStuck x} ()
-        le {e1 = notStuck x} tr = notStuckEff
+        le {e1 = notStuck x} tr = tt
 
 
 ⊥~i∥-cong : ∀ {i A B E} {{EC : Concurrent E}} {p p' : CTree⊥ E A ∞}{q q' : CTree⊥ E B ∞}
@@ -570,69 +571,69 @@ mutual
 ⊥~i∥-cong ~p ~q = ≲i-weaken {{_}} {{≡-Ord}} (λ { (refl , refl) → refl}) (⊥≲i∥-cong {{≡-Ord}} {{≡-Ord}} ~p ~q)
 
 
-⊥~i∥⃗-cong : ∀ {i A B E} {{_ : Concurrent E}} {p p' : CTree⊥ E A ∞}{q q' : CTree⊥ E B ∞}
-  → p ⊥~[ i ] p' → q ⊥~[ i ] q' → p ∥⃗ q ⊥~[ i ] p' ∥⃗ q'
-⊥~i∥⃗-cong ~p ~q = ~imap-cong (⊥~i∥-cong ~p ~q)
+⊥~i∥ʳ-cong : ∀ {i A B E} {{_ : Concurrent E}} {p p' : CTree⊥ E A ∞}{q q' : CTree⊥ E B ∞}
+  → p ⊥~[ i ] p' → q ⊥~[ i ] q' → p ∥ʳ q ⊥~[ i ] p' ∥ʳ q'
+⊥~i∥ʳ-cong ~p ~q = ~imap-cong (⊥~i∥-cong ~p ~q)
 
 
-⊥≲i∥⃗-cong : ∀ {i A B E} {{_ : Ord A}} {{_ : Ord B}} {{_ : Concurrent E}} {p p' : CTree⊥ E A ∞}{q q' : CTree⊥ E B ∞}
-  → p ⊥≲[ i ] p' → q ⊥≲[ i ] q' → p ∥⃗ q ⊥≲[ i ] p' ∥⃗ q'
-⊥≲i∥⃗-cong ≲p ≲q = ≲imap-cong (⊥≲i∥-cong ≲p ≲q) proj₂
+⊥≲i∥ʳ-cong : ∀ {i A B E} {{_ : Ord A}} {{_ : Ord B}} {{_ : Concurrent E}} {p p' : CTree⊥ E A ∞}{q q' : CTree⊥ E B ∞}
+  → p ⊥≲[ i ] p' → q ⊥≲[ i ] q' → p ∥ʳ q ⊥≲[ i ] p' ∥ʳ q'
+⊥≲i∥ʳ-cong ≲p ≲q = ≲imap-cong (⊥≲i∥-cong ≲p ≲q) proj₂
 
-⊥~i∥⃗-cong-l : ∀ {i A B E} {{_ : Concurrent E}} {p p' : CTree⊥ E A ∞}{q : CTree⊥ E B ∞}
-  → p ⊥~[ i ] p' → p ∥⃗ q ⊥~[ i ] p' ∥⃗  q
-⊥~i∥⃗-cong-l b = ⊥~i∥⃗-cong b ~irefl
+⊥~i∥ʳ-cong-l : ∀ {i A B E} {{_ : Concurrent E}} {p p' : CTree⊥ E A ∞}{q : CTree⊥ E B ∞}
+  → p ⊥~[ i ] p' → p ∥ʳ q ⊥~[ i ] p' ∥ʳ  q
+⊥~i∥ʳ-cong-l b = ⊥~i∥ʳ-cong b ~irefl
 
-⊥≲i∥⃗-cong-l : ∀ {i A B E} {{_ : Ord A}} {{_ : Ord B}} {{_ : Concurrent E}} {p p' : CTree⊥ E A ∞}{q : CTree⊥ E B ∞}
-  → p ⊥≲[ i ] p' → p ∥⃗ q ⊥≲[ i ] p' ∥⃗  q
-⊥≲i∥⃗-cong-l b = ⊥≲i∥⃗-cong b ≲irefl
+⊥≲i∥ʳ-cong-l : ∀ {i A B E} {{_ : Ord A}} {{_ : Ord B}} {{_ : Concurrent E}} {p p' : CTree⊥ E A ∞}{q : CTree⊥ E B ∞}
+  → p ⊥≲[ i ] p' → p ∥ʳ q ⊥≲[ i ] p' ∥ʳ  q
+⊥≲i∥ʳ-cong-l b = ⊥≲i∥ʳ-cong b ≲irefl
 
-⊥~i∥⃗-cong-r : ∀ {i A B E} {{_ : Concurrent E}} {p : CTree⊥ E A ∞}{q q' : CTree⊥ E B ∞}
-  → q ⊥~[ i ] q' → p ∥⃗ q ⊥~[ i ] p ∥⃗ q'
-⊥~i∥⃗-cong-r b = ⊥~i∥⃗-cong ~irefl b
+⊥~i∥ʳ-cong-r : ∀ {i A B E} {{_ : Concurrent E}} {p : CTree⊥ E A ∞}{q q' : CTree⊥ E B ∞}
+  → q ⊥~[ i ] q' → p ∥ʳ q ⊥~[ i ] p ∥ʳ q'
+⊥~i∥ʳ-cong-r b = ⊥~i∥ʳ-cong ~irefl b
 
-⊥≲i∥⃗-cong-r : ∀ {i A B E} {{_ : Ord B}} {{_ : Concurrent E}} {p : CTree⊥ E A ∞}{q q' : CTree⊥ E B ∞}
-  → q ⊥≲[ i ] q' → p ∥⃗ q ⊥≲[ i ] p ∥⃗ q'
-⊥≲i∥⃗-cong-r b = ⊥≲i∥⃗-cong {{≡-Ord}} ~irefl b
-
-
-⊥~i∥⃗-map-r : ∀ {i A B C E} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) {f : B → C} 
-  → map f (p ∥⃗ q) ⊥~[ i ] p ∥⃗ (map f q)
-⊥~i∥⃗-map-r p q = ~i-⊥~i (~i∥⃗-map-r p q)
+⊥≲i∥ʳ-cong-r : ∀ {i A B E} {{_ : Ord B}} {{_ : Concurrent E}} {p : CTree⊥ E A ∞}{q q' : CTree⊥ E B ∞}
+  → q ⊥≲[ i ] q' → p ∥ʳ q ⊥≲[ i ] p ∥ʳ q'
+⊥≲i∥ʳ-cong-r b = ⊥≲i∥ʳ-cong {{≡-Ord}} ~irefl b
 
 
-⊥≲i∥⃗-map-r : ∀ {i A B C E} {{_ : Ord C}} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) {f : B → C} 
-  → map f (p ∥⃗ q) ⊥≲[ i ] p ∥⃗ (map f q)
-⊥≲i∥⃗-map-r p q = ≲i-⊥≲i (≲i∥⃗-map-r p q)
+⊥~i∥ʳ-map-r : ∀ {i A B C E} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) {f : B → C} 
+  → map f (p ∥ʳ q) ⊥~[ i ] p ∥ʳ (map f q)
+⊥~i∥ʳ-map-r p q = ~i-⊥~i (~i∥ʳ-map-r p q)
 
 
-⊥~i∥⃗-map-r' : ∀ {i A B C D E} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) {f : B → C} {g : C → CTree⊥ E D ∞}
-  → ((p ∥⃗ q) >>= (λ v → g (f v))) ⊥~[ i ] ((p ∥⃗ (map f q)) >>= g)
-⊥~i∥⃗-map-r' p q = ~i-⊥~i (~i∥⃗-map-r' p q)
+⊥≲i∥ʳ-map-r : ∀ {i A B C E} {{_ : Ord C}} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) {f : B → C} 
+  → map f (p ∥ʳ q) ⊥≲[ i ] p ∥ʳ (map f q)
+⊥≲i∥ʳ-map-r p q = ≲i-⊥≲i (≲i∥ʳ-map-r p q)
 
 
-⊥≲i∥⃗-map-r' : ∀ {i A B C D E} {{_ : Ord D}} {{_ : Concurrent E}}
+⊥~i∥ʳ-map-r' : ∀ {i A B C D E} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) {f : B → C} {g : C → CTree⊥ E D ∞}
+  → ((p ∥ʳ q) >>= (λ v → g (f v))) ⊥~[ i ] ((p ∥ʳ (map f q)) >>= g)
+⊥~i∥ʳ-map-r' p q = ~i-⊥~i (~i∥ʳ-map-r' p q)
+
+
+⊥≲i∥ʳ-map-r' : ∀ {i A B C D E} {{_ : Ord D}} {{_ : Concurrent E}}
   (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) {f : B → C} {g : C → CTree⊥ E D ∞}
-  → ((p ∥⃗ q) >>= (λ v → g (f v))) ⊥≲[ i ] ((p ∥⃗ (map f q)) >>= g)
-⊥≲i∥⃗-map-r' p q = ≲i-⊥≲i (≲i∥⃗-map-r' p q)
+  → ((p ∥ʳ q) >>= (λ v → g (f v))) ⊥≲[ i ] ((p ∥ʳ (map f q)) >>= g)
+⊥≲i∥ʳ-map-r' p q = ≲i-⊥≲i (≲i∥ʳ-map-r' p q)
 
-⊥~i∥⃗-map-l : ∀ {i A A' B E} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) {f : A → A'}
-  → p ∥⃗ q ⊥~[ i ]  map f p ∥⃗ q
-⊥~i∥⃗-map-l p q = ~i-⊥~i (~i∥⃗-map-l p q)
-
-
-⊥≲i∥⃗-map-l : ∀ {i A A' B E} {{_ : Ord B}} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) {f : A → A'}
-  → p ∥⃗ q ⊥≲[ i ]  map f p ∥⃗ q
-⊥≲i∥⃗-map-l p q = ≲i-⊥≲i (≲i∥⃗-map-l p q)
+⊥~i∥ʳ-map-l : ∀ {i A A' B E} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) {f : A → A'}
+  → p ∥ʳ q ⊥~[ i ]  map f p ∥ʳ q
+⊥~i∥ʳ-map-l p q = ~i-⊥~i (~i∥ʳ-map-l p q)
 
 
-⊥~i∥⃗-comm : ∀ {i A B C E} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) (r : CTree⊥ E C ∞)
-  → (p ∥⃗ q) ∥⃗ r ⊥~[ i ] (q ∥⃗ p) ∥⃗ r
-⊥~i∥⃗-comm p q r = ~i-⊥~i (~i∥⃗-comm p q r)
+⊥≲i∥ʳ-map-l : ∀ {i A A' B E} {{_ : Ord B}} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) {f : A → A'}
+  → p ∥ʳ q ⊥≲[ i ]  map f p ∥ʳ q
+⊥≲i∥ʳ-map-l p q = ≲i-⊥≲i (≲i∥ʳ-map-l p q)
 
-⊥≲i∥⃗-comm : ∀ {i A B C E} {{_ : Ord C}} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) (r : CTree⊥ E C ∞)
-  → (p ∥⃗ q) ∥⃗ r ⊥≲[ i ] (q ∥⃗ p) ∥⃗ r
-⊥≲i∥⃗-comm p q r = ≲i-⊥≲i (≲i∥⃗-comm p q r)
+
+⊥~i∥ʳ-comm : ∀ {i A B C E} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) (r : CTree⊥ E C ∞)
+  → (p ∥ʳ q) ∥ʳ r ⊥~[ i ] (q ∥ʳ p) ∥ʳ r
+⊥~i∥ʳ-comm p q r = ~i-⊥~i (~i∥ʳ-comm p q r)
+
+⊥≲i∥ʳ-comm : ∀ {i A B C E} {{_ : Ord C}} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) (r : CTree⊥ E C ∞)
+  → (p ∥ʳ q) ∥ʳ r ⊥≲[ i ] (q ∥ʳ p) ∥ʳ r
+⊥≲i∥ʳ-comm p q r = ≲i-⊥≲i (≲i∥ʳ-comm p q r)
 
 
 ⊥~i∥-map : ∀ {i A A' B B' E} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) {f : A → A'} {g : B → B'}
@@ -647,14 +648,14 @@ mutual
 
 
 
-⊥~i∥⃗-map-l' : ∀ {i A A' B E} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) {f : A → A'}
-  → map f p ∥⃗ q ⊥~[ i ] p ∥⃗ q
-⊥~i∥⃗-map-l' p q = ~ilift (~isym (~i∥⃗-map-l p q))
+⊥~i∥ʳ-map-l' : ∀ {i A A' B E} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) {f : A → A'}
+  → map f p ∥ʳ q ⊥~[ i ] p ∥ʳ q
+⊥~i∥ʳ-map-l' p q = ~ilift (~isym (~i∥ʳ-map-l p q))
 
 
-⊥≲i∥⃗-map-l' : ∀ {i A A' B E} {{_ : Ord B}} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) {f : A → A'}
-  → map f p ∥⃗ q ⊥≲[ i ] p ∥⃗ q
-⊥≲i∥⃗-map-l' p q = ~i-≲i (⊥~i∥⃗-map-l' p q)
+⊥≲i∥ʳ-map-l' : ∀ {i A A' B E} {{_ : Ord B}} {{_ : Concurrent E}} (p : CTree⊥ E A ∞) (q : CTree⊥ E B ∞) {f : A → A'}
+  → map f p ∥ʳ q ⊥≲[ i ] p ∥ʳ q
+⊥≲i∥ʳ-map-l' p q = ~i-≲i (⊥~i∥ʳ-map-l' p q)
 
 
 --------------------------
@@ -707,38 +708,38 @@ mutual
 
 
 ~iset-get : ∀ {E A i} {m : Memory A} {r : Reg} {v : A} 
-  → get (m #[ r ← v ]) r ~[ i ] return {E = Stuck E} v
+  → get r (set r v m) ~[ i ] return {E = Stuck E} v
 ~iset-get {m = m} {r} {v} rewrite getSet {r = r} {v} {m} =  ~irefl
 
 ~iset-get->>= : ∀ {E A B i} {m : Memory A} {r : Reg} {v : A} {f : A → CTree⊥ E B ∞}
-  → (get (m #[ r ← v ]) r >>= f) ~[ i ] f v
+  → (get r (set r v m) >>= f) ~[ i ] f v
 ~iset-get->>= {m = m} {r} {v} rewrite getSet {r = r} {v} {m} =  ~irefl
 
 
 ⊥~iget : ∀ {A E} {{_ : Ord A}} {i} {r : Reg} {m m' : Memory A}
-           → m ⊑ m' → get {E = E} m r ⊥~[ i ] get m' r
+           → m ⊑ m' → get {E = E} r m ⊥~[ i ] get r m'
 ⊥~iget {r = r} {m = m} le with ⊑-get {r = r} {m = m}
-... | le' with  m #[ r ]
+... | le' with  get' r m
 ... | nothing = ⊥~istuck
 ... | just x rewrite le' le refl = ⊥~irefl
 
 
 ⊥≲iget : ∀ {A E} {{_ : Ord A}} {i} {r : Reg} {m m' : Memory A}
-           → m ⊑ m' → get {E = E} m r ⊥≲[ i ] get m' r
+           → m ⊑ m' → get {E = E} r m ⊥≲[ i ] get r m'
 ⊥≲iget le = ~i-≲i (⊥~iget le)
 
 
 ⊥~iget->>= : ∀ {A B E} {{_ : Ord A}}  {i} {r : Reg} {m m' : Memory A}
            {f : A → CTree⊥ E B ∞}
-           → m ⊑ m' → get {E = E} m r >>= f ⊥~[ i ] get m' r >>= f
+           → m ⊑ m' → get {E = E} r m >>= f ⊥~[ i ] get r m' >>= f
 ⊥~iget->>= {r = r} {m = m} le with ⊑-get {r = r} {m = m}
-... | le' with  m #[ r ]
+... | le' with  get' r m
 ... | nothing = ⊥~istuck
 ... | just x rewrite le' le refl = ⊥~irefl
 
 ⊥≲iget->>= : ∀ {A B E} {{_ : Ord A}} {{_ : Ord B}} {i} {r : Reg} {m m' : Memory A}
            {f : A → CTree⊥ E B ∞}
-           → m ⊑ m' → get {E = E} m r >>= f ⊥≲[ i ] get m' r >>= f
+           → m ⊑ m' → get {E = E} r m >>= f ⊥≲[ i ] get r m' >>= f
 ⊥≲iget->>= le = ~i-≲i (⊥~iget->>= le)
 
 

@@ -1,4 +1,4 @@
-{-# OPTIONS --sized-types --guardedness #-}
+{-# OPTIONS --sized-types #-}
 
 -------------------------------------------------------------
 -- Step-indexed definition of bisimilarity of choice trees --

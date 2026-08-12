@@ -1,0 +1,8 @@
+-- Library file for the Agda formalisation.
+-- This causes Agda to store all generated interface
+-- files under _build/<agda-version>/agda/ instead of scattering them
+-- next to the source files.
+
+name: skew-bisim
+include: .
+depend: standard-library

@@ -1,4 +1,4 @@
-{-# OPTIONS --copatterns --sized-types --guardedness #-}
+{-# OPTIONS --sized-types #-}
 
 ----------------------------------
 -- Bisimilarity of choice trees --
@@ -22,6 +22,7 @@ open import Data.List.Membership.Propositional.Properties
 open import Data.List.Relation.Unary.Any
 open import Induction.WellFounded
 open import Data.Product.Relation.Binary.Lex.Strict
+open import Agda.Primitive using (Setω)
 
 --------------------------------------------------------------------
 -- This is the definition of (strong) bisimilarity of (generalised)
@@ -99,6 +100,43 @@ _~̂_ = _≲̂_  {{≡-Ord}}
 ~-~i : ∀ {E L A i} {p q : CTree' E A} → (p ~̂ L ! q) → p ~̂ L [ i ] q
 ~-~i = ≲-≲i {{≡-Ord}}
 
+-- Bisimilarity can be weakened to a bisimilarity that is conditional
+-- on an effect predicate L, since any tree is trivially locally
+-- AnyEff-safe.
+≲lift : ∀ {E L A i} {{_ : Ord A}} {p q : CTree' E A}
+  → (p ≲̂ AnyEff ! q) {i} → (p ≲̂ L ! q) {i}
+≲left  (≲lift b) _ tr with l' , q' , leq , tr' , b' ← ≲left b AnyEff-lsafe tr
+  = l' , q' , leq , tr' , ≲lift b'
+≲right (≲lift b) _ tr with l' , p' , leq , tr' , b' ← ≲right b AnyEff-lsafe tr
+  = l' , p' , leq , tr' , ≲lift b'
+
+~lift : ∀ {E L A i} {p q : CTree' E A} → (p ~̂ AnyEff ! q) {i} → (p ~̂ L ! q) {i}
+~lift = ≲lift {{≡-Ord}}
+
+-- Ordered bisimilarity is monotone in the preorder on return values.
+≲-weaken : ∀ {E L A i} {{O : Ord A}} {{O' : Ord A}} {p q : CTree' E A} →
+  (∀ {x y} → _⊑_ {{O}} x y → _⊑_ {{O'}} x y) →
+  (_≲̂_!_ {{O}} p L q) {i} → (_≲̂_!_ {{O'}} p L q) {i}
+≲left (≲-weaken {{O}} {{O'}} mon b) ls tr
+  with l' , q' , leq , tr' , b' ← ≲left {{O}} b ls tr
+  = l' , q' , ⊑lab-monotone {{O}} {{O'}} mon leq , tr' , ≲-weaken {{O}} {{O'}} mon b'
+≲right (≲-weaken {{O}} {{O'}} mon b) ls tr
+  with l' , p' , leq , tr' , b' ← ≲right {{O}} b ls tr
+  = l' , p' , ⊑lab-monotone {{O}} {{O'}} mon leq , tr' , ≲-weaken {{O}} {{O'}} mon b'
+
+-- If the preorder on return values is in fact equality, then ordered
+-- bisimilarity collapses to bisimilarity.
+private
+  ≡-⊑≡ : ∀ {E A} {l l' : label E A} → l ≡ l' → l ⊑≡ l'
+  ≡-⊑≡ refl = ⊑≡-refl
+
+≲-~ : ∀ {E L A i} {{_ : Ord A}} {p q : CTree' E A} → (∀ {x y : A} → x ⊑ y → x ≡ y)
+  → (p ≲̂ L ! q) {i} → (p ~̂ L ! q) {i}
+≲left (≲-~ ⊑to≡ b) ls tr with l' , q' , leq , tr' , b' ← ≲left b ls tr
+  = l' , q' , ≡-⊑≡ (⊑-≡ ⊑to≡ leq) , tr' , ≲-~ ⊑to≡ b'
+≲right (≲-~ ⊑to≡ b) ls tr with l' , p' , leq , tr' , b' ← ≲right b ls tr
+  = l' , p' , ≡-⊑≡ (⊑-≡ ⊑to≡ leq) , tr' , ≲-~ ⊑to≡ b'
+
 -- Next we show that indexed bisimilarity implies bisimilarity. To
 -- this end we need a number of lemmas.
 
@@ -114,73 +152,93 @@ private
     with l' , q' , leq , tr' , bi' ← ≲iright bi ls tr = step leq tr' (≲ilsuc bi')
 
 
-module Classical where
+---------------------------------------------------------------------
+-- Double-negation elimination.
+--
+-- Showing that step-indexed bisimilarity implies bisimilarity is the
+-- only place in the development where classical reasoning is needed.
+-- Rather than postulating it, we make it an explicit assumption: the
+-- results that need it take an argument of type DNE, so the
+-- dependency is visible in their types and in the types of everything
+-- that uses them. The development contains no postulate.
+---------------------------------------------------------------------
 
-  private 
-    postulate ¬¬-elim : ∀ {l} {A : Set l} → ¬ ¬ A → A
+DNE : Setω
+DNE = ∀ {l} {A : Set l} → ¬ ¬ A → A
 
-    ¬∀-∃ : ∀ {l l'} → {A : Set l}  {P : A → Set l'} → ¬ (∀ i → P i) → (∃[ i ] ¬ P i)
-    ¬∀-∃ ne =  ¬¬-elim λ f → ne (λ i → ¬¬-elim λ g → f (i , g))
+private
+ module Classical (¬¬-elim : DNE) where
 
-    lem : ∀ {l} (A : Set l) → A ⊎ ¬ A
-    lem _ = ¬¬-elim (λ f → f (inj₂ (λ a → f (inj₁ a))))
+   private
+     ¬∀-∃ : ∀ {l l'} → {A : Set l}  {P : A → Set l'} → ¬ (∀ i → P i) → (∃[ i ] ¬ P i)
+     ¬∀-∃ ne =  ¬¬-elim λ f → ne (λ i → ¬¬-elim λ g → f (i , g))
 
-    mutual
-      fin-nondet : ∀ {E A l l'} {{_ : Ord A}} (p : CTree' E A) {P : CTree' E A → ℕ → Set l' } →
-        (∀ {i j p'} → i ≤ j → P p' i → P p' j) →
-        (∀ {l' p'} → l ⊑ l' → p [ l' ]⇒ p' → ∃[ i ] P p' i) → ∃[ i ] ∀ {l' p'} → l ⊑ l' → p [ l' ]⇒ p' → P p' i
-      fin-nondet (p ↑) = fin-nondet↑ p
-      fin-nondet (wait B c) = fin-nondet-wait c
+     lem : ∀ {l} (A : Set l) → A ⊎ ¬ A
+     lem _ = ¬¬-elim (λ f → f (inj₂ (λ a → f (inj₁ a))))
 
-      fin-nondet↑ : ∀ {E A l l'} {{_ : Ord A}} (p : CTree E A ∞) {P : CTree' E A → ℕ → Set l' } →
-        (∀ {i j p'} → i ≤ j → P p' i → P p' j) →
-        (∀ {l' p'} → l ⊑ l' → p ↑ [ l' ]⇒ p' → ∃[ i ] P p' i) → ∃[ i ] ∀ {l' p'} → l ⊑ l' → p ↑ [ l' ]⇒ p' → P p' i
+     mutual
+       fin-nondet : ∀ {E A l l'} {{_ : Ord A}} (p : CTree' E A) {P : CTree' E A → ℕ → Set l' } →
+         (∀ {i j p'} → i ≤ j → P p' i → P p' j) →
+         (∀ {l' p'} → l ⊑ l' → p [ l' ]⇒ p' → ∃[ i ] P p' i) → ∃[ i ] ∀ {l' p'} → l ⊑ l' → p [ l' ]⇒ p' → P p' i
+       fin-nondet (p ↑) = fin-nondet↑ p
+       fin-nondet (wait B c) = fin-nondet-wait c
 
-      fin-nondet↑ {l = l} (now v) down step with lem (l ⊑ ⟨ ρ v ⟩)
-      ... | inj₁ (⊑ρ leq) with i , Pp' ← step (⊑ρ leq) (⇒-now v) = i , λ { _ (⇒-now v) → Pp'}
-      ... | inj₂ neq =  0 ,  λ { {l'} leq (⇒-now v') →  ⊥-elim (neq leq)}
-      fin-nondet↑ {l = ⟨ a ⟩} (later p) down step = 0 ,  λ { (⊑ε e) () ; (⊑ι r) () ; (⊑ρ x) ()}
+       fin-nondet↑ : ∀ {E A l l'} {{_ : Ord A}} (p : CTree E A ∞) {P : CTree' E A → ℕ → Set l' } →
+         (∀ {i j p'} → i ≤ j → P p' i → P p' j) →
+         (∀ {l' p'} → l ⊑ l' → p ↑ [ l' ]⇒ p' → ∃[ i ] P p' i) → ∃[ i ] ∀ {l' p'} → l ⊑ l' → p ↑ [ l' ]⇒ p' → P p' i
 
-      fin-nondet↑ {l = τ} (later p) down step with i , Pp ← step ⊑τ ⇒-later = i ,  λ {_ ⇒-later → Pp}
-      fin-nondet↑ (p1 ⊕ p2) down step
-        with i1 , P1 ← fin-nondet↑ p1 down (λ leq tr → step leq (⇒-⊕-l tr))
-        with i2 , P2 ← fin-nondet↑ p2 down (λ leq tr → step leq (⇒-⊕-r tr))
-          = i1 ⊔ i2 ,  λ { leq (⇒-⊕-l tr) → down (m≤m⊔n i1 i2) (P1 leq tr) ;
-                           leq (⇒-⊕-r tr) → down (m≤n⊔m i1 i2) (P2 leq tr)}
-      fin-nondet↑ ∅ down step  = 0 , λ _ ()
-      fin-nondet↑ {l = l} (eff {B = B} e c) down step with lem (l ≡ ⟨ ε e ⟩)
-      ... | inj₁ (refl) with i , Pp' ← step (⊑ε e) (⇒-eff e c) = i , λ { _ (⇒-eff _ _)  → Pp' }
-      ... | inj₂ neq = 0 ,  λ { (⊑ε _) (⇒-eff _ _) → ⊥-elim (neq refl)}
+       fin-nondet↑ {l = l} (now v) down step with lem (l ⊑ ⟨ ρ v ⟩)
+       ... | inj₁ (⊑ρ leq) with i , Pp' ← step (⊑ρ leq) (⇒-now v) = i , λ { _ (⇒-now v) → Pp'}
+       ... | inj₂ neq =  0 ,  λ { {l'} leq (⇒-now v') →  ⊥-elim (neq leq)}
+       fin-nondet↑ {l = ⟨ a ⟩} (later p) down step = 0 ,  λ { (⊑ε e) () ; (⊑ι r) () ; (⊑ρ x) ()}
 
-      fin-nondet-wait : ∀ {E A l l' B} {{_ : Ord A }} (c : B → CTree E A ∞) {P : CTree' E A → ℕ → Set l' } →
-        (∀ {i j p'} → i ≤ j → P p' i → P p' j) →
-        (∀ {l' p'} → l ⊑ l' → wait B c [ l' ]⇒ p' → ∃[ i ] P p' i) → ∃[ i ] ∀ {l' p'} → l ⊑ l' → wait B c [ l' ]⇒ p' → P p' i
+       fin-nondet↑ {l = τ} (later p) down step with i , Pp ← step ⊑τ ⇒-later = i ,  λ {_ ⇒-later → Pp}
+       fin-nondet↑ (p1 ⊕ p2) down step
+         with i1 , P1 ← fin-nondet↑ p1 down (λ leq tr → step leq (⇒-⊕-l tr))
+         with i2 , P2 ← fin-nondet↑ p2 down (λ leq tr → step leq (⇒-⊕-r tr))
+           = i1 ⊔ i2 ,  λ { leq (⇒-⊕-l tr) → down (m≤m⊔n i1 i2) (P1 leq tr) ;
+                            leq (⇒-⊕-r tr) → down (m≤n⊔m i1 i2) (P2 leq tr)}
+       fin-nondet↑ ∅ down step  = 0 , λ _ ()
+       fin-nondet↑ {l = l} (eff {B = B} e c) down step with lem (l ≡ ⟨ ε e ⟩)
+       ... | inj₁ (refl) with i , Pp' ← step (⊑ε e) (⇒-eff e c) = i , λ { _ (⇒-eff _ _)  → Pp' }
+       ... | inj₂ neq = 0 ,  λ { (⊑ε _) (⇒-eff _ _) → ⊥-elim (neq refl)}
+
+       fin-nondet-wait : ∀ {E A l l' B} {{_ : Ord A }} (c : B → CTree E A ∞) {P : CTree' E A → ℕ → Set l' } →
+         (∀ {i j p'} → i ≤ j → P p' i → P p' j) →
+         (∀ {l' p'} → l ⊑ l' → wait B c [ l' ]⇒ p' → ∃[ i ] P p' i) → ∃[ i ] ∀ {l' p'} → l ⊑ l' → wait B c [ l' ]⇒ p' → P p' i
       
-      fin-nondet-wait {l = l} {B = B} c down step with lem (Σ[ r ∈ B ] l ≡ ⟨ ι r ⟩)
-      ... | inj₁ (r , refl) with i , Pp' ← step (⊑ι r) (⇒-inp r c) = i , λ { (⊑ι _) (⇒-inp _ _)  → Pp' }
-      ... | inj₂ neq = 0 ,  λ {(⊑ι _ )(⇒-inp r _) → ⊥-elim (neq (r , refl))}
+       fin-nondet-wait {l = l} {B = B} c down step with lem (Σ[ r ∈ B ] l ≡ ⟨ ι r ⟩)
+       ... | inj₁ (r , refl) with i , Pp' ← step (⊑ι r) (⇒-inp r c) = i , λ { (⊑ι _) (⇒-inp _ _)  → Pp' }
+       ... | inj₂ neq = 0 ,  λ {(⊑ι _ )(⇒-inp r _) → ⊥-elim (neq (r , refl))}
 
 
-  fin-nondet' : ∀ {E A l l'} {{_ : Ord A}} (p : CTree' E A) {P : CTree' E A → ℕ → Set l'} →
-        (∀ {i j p'} → i ≤ j → P p' i → P p' j) →
-        (∀ {l' p'} → l' ⊑ l → p [ l' ]⇒ p' → ∃[ i ] P p' i) → ∃[ i ] ∀ {l' p'} → l' ⊑ l → p [ l' ]⇒ p' → P p' i
-  fin-nondet' {l = l} {{O}} p {P = P} down step
-    with i , st ← fin-nondet {{Ord-rev O}} p down (λ leq → step (⊑lab-rev' leq))
-      = i , λ leq tr → st (⊑lab-rev leq) tr
+   fin-nondet' : ∀ {E A l l'} {{_ : Ord A}} (p : CTree' E A) {P : CTree' E A → ℕ → Set l'} →
+         (∀ {i j p'} → i ≤ j → P p' i → P p' j) →
+         (∀ {l' p'} → l' ⊑ l → p [ l' ]⇒ p' → ∃[ i ] P p' i) → ∃[ i ] ∀ {l' p'} → l' ⊑ l → p [ l' ]⇒ p' → P p' i
+   fin-nondet' {l = l} {{O}} p {P = P} down step
+     with i , st ← fin-nondet {{Ord-rev O}} p down (λ leq → step (⊑lab-rev' leq))
+       = i , λ leq tr → st (⊑lab-rev leq) tr
 
 
 
--- indexed bisimilarity ⇒ bisimilarity
+ -- indexed bisimilarity ⇒ bisimilarity
 
-  ≲i-≲ : ∀ {E L A j} {{_ : Ord A}} {p q : CTree' E A} → (∀ i → p ≲̂ L [ i ] q) → (p ≲̂ L ! q) {j}
-  ≲left (≲i-≲ {p = p} {q} ibi) ls {p' = p'} tr = ¬¬-elim  λ ¬left →
-    ¬≲ileft ls tr (proj₂ (fin-nondet _ (λ le ¬Pi Pj → ¬Pi (≲idown le Pj))
-    (λ {l' q'} leq tr' → ¬∀-∃ λ trs → ¬left (l' , q' , leq , tr' , ≲i-≲ trs)  ))) (ibi _) 
-  ≲right (≲i-≲ {p = p} {q} ibi) ls {q' = q'} tr = ¬¬-elim  λ ¬right →
-    ¬≲iright ls tr (proj₂ (fin-nondet' _ (λ le ¬Pi Pj → ¬Pi (≲idown le Pj))
-    (λ {l' q'} leq tr' → ¬∀-∃ λ trs → ¬right (l' , q' , leq , tr' , ≲i-≲ trs)  ))) (ibi _) 
+   ≲i-≲ : ∀ {E L A j} {{_ : Ord A}} {p q : CTree' E A} → (∀ i → p ≲̂ L [ i ] q) → (p ≲̂ L ! q) {j}
+   ≲left (≲i-≲ {p = p} {q} ibi) ls {p' = p'} tr = ¬¬-elim  λ ¬left →
+     ¬≲ileft ls tr (proj₂ (fin-nondet _ (λ le ¬Pi Pj → ¬Pi (≲idown le Pj))
+     (λ {l' q'} leq tr' → ¬∀-∃ λ trs → ¬left (l' , q' , leq , tr' , ≲i-≲ trs)  ))) (ibi _) 
+   ≲right (≲i-≲ {p = p} {q} ibi) ls {q' = q'} tr = ¬¬-elim  λ ¬right →
+     ¬≲iright ls tr (proj₂ (fin-nondet' _ (λ le ¬Pi Pj → ¬Pi (≲idown le Pj))
+     (λ {l' q'} leq tr' → ¬∀-∃ λ trs → ¬right (l' , q' , leq , tr' , ≲i-≲ trs)  ))) (ibi _)
 
-open Classical public
+   ~i-~ : ∀ {E L A j} {p q : CTree' E A} → (∀ i → p ~̂ L [ i ] q) → (p ~̂ L ! q) {j}
+   ~i-~ = ≲i-≲ {{≡-Ord}}
 
-~i-~ : ∀ {E L A j} {p q : CTree' E A} → (∀ i → p ~̂ L [ i ] q) → (p ~̂ L ! q) {j}
-~i-~ = ≲i-≲ {{≡-Ord}}
+-- Step-indexed bisimilarity implies bisimilarity, assuming
+-- double-negation elimination.
+
+≲i-≲ : DNE → ∀ {E L A j} {{_ : Ord A}} {p q : CTree' E A} → (∀ i → p ≲̂ L [ i ] q) → (p ≲̂ L ! q) {j}
+≲i-≲ = Classical.≲i-≲
+
+~i-~ : DNE → ∀ {E L A j} {p q : CTree' E A} → (∀ i → p ~̂ L [ i ] q) → (p ~̂ L ! q) {j}
+~i-~ = Classical.~i-~

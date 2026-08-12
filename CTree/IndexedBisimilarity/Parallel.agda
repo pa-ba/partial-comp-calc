@@ -1,4 +1,4 @@
-{-# OPTIONS --sized-types --guardedness #-}
+{-# OPTIONS --sized-types #-}
 
 
 module CTree.IndexedBisimilarity.Parallel where
@@ -27,14 +27,14 @@ open import Data.Nat.Induction
 -- separate files, since typechecking is slow.
 
 
-~ireturn-∥⃗ : ∀ {i A B E L} {{_ : Concurrent E}} {v : A} {p : CTree E B ∞}
-  → return v ∥⃗ p ~ L [ i ] p
-~ireturn-∥⃗ = ~ilift (prf (<-wellFounded _) _)  where
-  prf : ∀ {i A B E} {{_ : Concurrent E}} {v : A} (ac : Acc (_<_) i) (p : CTree E B ∞) → return v ∥⃗ p ~[ i ] p
+~ireturn-∥ʳ : ∀ {i A B E L} {{_ : Concurrent E}} {v : A} {p : CTree E B ∞}
+  → return v ∥ʳ p ~ L [ i ] p
+~ireturn-∥ʳ = ~ilift (prf (<-wellFounded _) _)  where
+  prf : ∀ {i A B E} {{_ : Concurrent E}} {v : A} (ac : Acc (_<_) i) (p : CTree E B ∞) → return v ∥ʳ p ~[ i ] p
   prf {zero} _ _ = ~izero
   prf {suc i} {B = B} {E} {v = v} a p = ~istep' (left a p) (right a p) where
     left : (ac : Acc (_<_) (suc i)) → (p : CTree E B ∞)
-      → ∀ {l p'} → ((return v ∥⃗ p) ↑) [ l ]⇒ p' → ∃[ q' ] (p ↑) [ l ]⇒ q' × p' ~̂[ lsuc l i ] q'
+      → ∀ {l p'} → ((return v ∥ʳ p) ↑) [ l ]⇒ p' → ∃[ q' ] (p ↑) [ l ]⇒ q' × p' ~̂[ lsuc l i ] q'
     left (acc rec) (later p) (⇒-⊕-l (⇒-⊕-r ⇒-later)) = _ , ⇒-later , prf (rec ≤-refl) (force p)
     left a (p ⊕ q) (⇒-⊕-l (⇒-⊕-r (⇒-⊕-l tr))) with
       q' , tr' , b ← left a p (⇒-⊕-l (⇒-⊕-r tr))
@@ -50,7 +50,7 @@ open import Data.Nat.Induction
     left a (p ⊕ q) (⇒-⊕-r (⇒-⊕-r tr)) with q' , tr' , b ← left a q (⇒-⊕-r tr)
       =  _ , ⇒-⊕-r tr' , b
     right : (ac : Acc (_<_) (suc i)) → (p : CTree E B ∞) → ∀ {l q'}
-          → (p ↑) [ l ]⇒ q' → ∃[ p' ] ((return v ∥⃗ p) ↑) [ l ]⇒ p' × p' ~̂[ lsuc l i ] q'
+          → (p ↑) [ l ]⇒ q' → ∃[ p' ] ((return v ∥ʳ p) ↑) [ l ]⇒ p' × p' ~̂[ lsuc l i ] q'
     right a (now v) (⇒-now .v) = _ , ⇒-⊕-r (⇒-now v) , ~irefl
     right (acc rec) (later p) ⇒-later = -, ⇒-⊕-l (⇒-⊕-r ⇒-later) , prf (rec ≤-refl) (force p)
     right a (p ⊕ q) (⇒-⊕-l tr) with right a p tr
@@ -61,6 +61,6 @@ open import Data.Nat.Induction
     ... | q' , ⇒-⊕-r tr' , b = -, ⇒-⊕-r (⇒-⊕-r tr') , b
     right a (eff e c) (⇒-eff .e .c) = -, ⇒-⊕-l (⇒-⊕-r (⇒-eff e _)) , ~iwait (λ r → prf a (c r))
 
-≲ireturn-∥⃗ : ∀ {i A B E L} {{_ : Ord B}} {{_ : Concurrent E}} {v : A} {p : CTree E B ∞}
-  → return v ∥⃗ p ≲ L [ i ] p
-≲ireturn-∥⃗ = ~i-≲i ~ireturn-∥⃗
+≲ireturn-∥ʳ : ∀ {i A B E L} {{_ : Ord B}} {{_ : Concurrent E}} {v : A} {p : CTree E B ∞}
+  → return v ∥ʳ p ≲ L [ i ] p
+≲ireturn-∥ʳ = ~i-≲i ~ireturn-∥ʳ

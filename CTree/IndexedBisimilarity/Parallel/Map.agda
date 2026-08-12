@@ -1,4 +1,4 @@
-{-# OPTIONS --sized-types --guardedness #-}
+{-# OPTIONS --sized-types #-}
 
 
 module CTree.IndexedBisimilarity.Parallel.Map where
@@ -79,33 +79,33 @@ open import Function using (id; _∘_)
 
 
 ------------------------------------
--- Corresponding properties for ∥⃗ --
+-- Corresponding properties for ∥ʳ --
 ------------------------------------
 
 
 open ~i-Calculation
 
-~i∥⃗-map-r : ∀ {i A B C E} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞) {f : B → C} 
-  → map f (p ∥⃗ q) ~[ i ] p ∥⃗ (map f q)
-~i∥⃗-map-r p q {f} = 
+~i∥ʳ-map-r : ∀ {i A B C E} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞) {f : B → C} 
+  → map f (p ∥ʳ q) ~[ i ] p ∥ʳ (map f q)
+~i∥ʳ-map-r p q {f} = 
   map f (map proj₂ (p ∥ q))
     ~⟨ ~imap-∘ (p ∥ q) ⟩
   map (λ (x , y) → proj₂ (x , f y)) (p ∥ q)
     ~⟨ ~isym (~imap-∘ (p ∥ q)) ⟩
   map proj₂ (map (λ (x , y) → (x , f y)) (p ∥ q))
     ~⟨ ~imap-cong (~i∥-map p q) ⟩
-  map id p ∥⃗ map f q
-    ~⟨ ~i∥⃗-cong-l (~imap-id p) ⟩
-  (p ∥⃗ map f q)
+  map id p ∥ʳ map f q
+    ~⟨ ~i∥ʳ-cong-l (~imap-id p) ⟩
+  (p ∥ʳ map f q)
   ∎
 
-≲i∥⃗-map-r : ∀ {i A B C E} {{_ : Ord C}} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞) {f : B → C} 
-  → map f (p ∥⃗ q) ≲[ i ] p ∥⃗ (map f q)
-≲i∥⃗-map-r p q = ~i-≲i (~i∥⃗-map-r p q)
+≲i∥ʳ-map-r : ∀ {i A B C E} {{_ : Ord C}} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞) {f : B → C} 
+  → map f (p ∥ʳ q) ≲[ i ] p ∥ʳ (map f q)
+≲i∥ʳ-map-r p q = ~i-≲i (~i∥ʳ-map-r p q)
 
-~i∥⃗-map-r' : ∀ {i A B C D E} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞) {f : B → C} {g : C → CTree E D ∞}
-  → ((p ∥⃗ q) >>= (λ v → g (f v))) ~[ i ] ((p ∥⃗ (map f q)) >>= g)
-~i∥⃗-map-r' p q {f} {g} =
+~i∥ʳ-map-r' : ∀ {i A B C D E} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞) {f : B → C} {g : C → CTree E D ∞}
+  → ((p ∥ʳ q) >>= (λ v → g (f v))) ~[ i ] ((p ∥ʳ (map f q)) >>= g)
+~i∥ʳ-map-r' p q {f} {g} =
   (((p ∥ q) >>= λ x → return (proj₂ x)) >>= (λ v → g (f v)))
   ~⟨ ~i>>=-assoc (p ∥ q) ⟩
   ((p ∥ q) >>= (λ x → return (proj₂ x) >>= (λ v → g (f v))))
@@ -116,29 +116,29 @@ open ~i-Calculation
   ~⟨ ~isym (~i>>=-assoc (p ∥ q)) ⟩
   ((p ∥ q) >>= (λ x → return (f (proj₂ x))) >>= g)
   ~⟨ ~i>>=-cong-l (~isym (~imap-∘ (p ∥ q))) ⟩
-  ((map f (p ∥⃗ q)) >>= g)
-  ~⟨ ~i>>=-cong-l (~i∥⃗-map-r p q) ⟩
-  ((p ∥⃗ map f q) >>= g)
+  ((map f (p ∥ʳ q)) >>= g)
+  ~⟨ ~i>>=-cong-l (~i∥ʳ-map-r p q) ⟩
+  ((p ∥ʳ map f q) >>= g)
   ∎
 
-≲i∥⃗-map-r' : ∀ {i A B C D E} {{_ : Ord D}} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞)
-  {f : B → C} {g : C → CTree E D ∞} → ((p ∥⃗ q) >>= (λ v → g (f v))) ≲[ i ] ((p ∥⃗ (map f q)) >>= g)
-≲i∥⃗-map-r' p q = ~i-≲i (~i∥⃗-map-r' p q)
+≲i∥ʳ-map-r' : ∀ {i A B C D E} {{_ : Ord D}} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞)
+  {f : B → C} {g : C → CTree E D ∞} → ((p ∥ʳ q) >>= (λ v → g (f v))) ≲[ i ] ((p ∥ʳ (map f q)) >>= g)
+≲i∥ʳ-map-r' p q = ~i-≲i (~i∥ʳ-map-r' p q)
 
-~i∥⃗-map-l : ∀ {i A A' B E} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞) {f : A → A'}
-  → p ∥⃗ q ~[ i ]  map f p ∥⃗ q
-~i∥⃗-map-l p q {f} =
+~i∥ʳ-map-l : ∀ {i A A' B E} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞) {f : A → A'}
+  → p ∥ʳ q ~[ i ]  map f p ∥ʳ q
+~i∥ʳ-map-l p q {f} =
   map proj₂ (p ∥ q)
   ≡⟨⟩
   map (λ (x , y) → proj₂ (f x , y)) (p ∥ q)
   ~⟨ ~isym (~imap-∘ (p ∥ q)) ⟩
   map proj₂ (map (map× f id) (p ∥ q))
   ~⟨ ~imap-cong (~i∥-map p q) ⟩
-  map f p ∥⃗ map id q
-  ~⟨ ~i∥⃗-cong-r (~imap-id q) ⟩
-  map f p ∥⃗ q
+  map f p ∥ʳ map id q
+  ~⟨ ~i∥ʳ-cong-r (~imap-id q) ⟩
+  map f p ∥ʳ q
   ∎
 
-≲i∥⃗-map-l : ∀ {i A A' B E} {{_ : Ord B}} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞) {f : A → A'}
-  → p ∥⃗ q ≲[ i ]  map f p ∥⃗ q
-≲i∥⃗-map-l p q = ~i-≲i (~i∥⃗-map-l p q)
+≲i∥ʳ-map-l : ∀ {i A A' B E} {{_ : Ord B}} {{_ : Concurrent E}} (p : CTree E A ∞) (q : CTree E B ∞) {f : A → A'}
+  → p ∥ʳ q ≲[ i ]  map f p ∥ʳ q
+≲i∥ʳ-map-l p q = ~i-≲i (~i∥ʳ-map-l p q)

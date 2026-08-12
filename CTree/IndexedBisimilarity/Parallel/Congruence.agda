@@ -1,4 +1,4 @@
-{-# OPTIONS --sized-types --guardedness #-}
+{-# OPTIONS --sized-types #-}
 
 
 module CTree.IndexedBisimilarity.Parallel.Congruence where
@@ -124,31 +124,31 @@ open import Relation.Binary.Construct.Closure.Transitive hiding (map)
 
 
 ------------------------------------
--- Corresponding properties for ∥⃗ --
+-- Corresponding properties for ∥ʳ --
 ------------------------------------
 
-≲i∥⃗-cong : ∀ {i A B E} {{_ : Ord A}}  {{_ : Ord B}} {{_ : Concurrent E}} {p p' : CTree E A ∞}{q q' : CTree E B ∞}
-  → p ≲[ i ] p' → q ≲[ i ] q' → p ∥⃗ q ≲[ i ] p' ∥⃗ q'
-≲i∥⃗-cong ≲p ≲q = ≲imap-cong (≲i∥-cong ≲p ≲q) λ leq → proj₂ leq
+≲i∥ʳ-cong : ∀ {i A B E} {{_ : Ord A}}  {{_ : Ord B}} {{_ : Concurrent E}} {p p' : CTree E A ∞}{q q' : CTree E B ∞}
+  → p ≲[ i ] p' → q ≲[ i ] q' → p ∥ʳ q ≲[ i ] p' ∥ʳ q'
+≲i∥ʳ-cong ≲p ≲q = ≲imap-cong (≲i∥-cong ≲p ≲q) λ leq → proj₂ leq
 
-~i∥⃗-cong : ∀ {i A B E} {{_ : Concurrent E}} {p p' : CTree E A ∞}{q q' : CTree E B ∞}
-  → p ~[ i ] p' → q ~[ i ] q' → p ∥⃗ q ~[ i ] p' ∥⃗ q'
-~i∥⃗-cong ~p ~q = ~imap-cong (~i∥-cong ~p ~q)
+~i∥ʳ-cong : ∀ {i A B E} {{_ : Concurrent E}} {p p' : CTree E A ∞}{q q' : CTree E B ∞}
+  → p ~[ i ] p' → q ~[ i ] q' → p ∥ʳ q ~[ i ] p' ∥ʳ q'
+~i∥ʳ-cong ~p ~q = ~imap-cong (~i∥-cong ~p ~q)
 
-≲i∥⃗-cong-l : ∀ {i A B E} {{_ : Ord A}}  {{_ : Ord B}} {{_ : Concurrent E}} {p p' : CTree E A ∞}{q : CTree E B ∞}
-  → p ≲[ i ] p' → p ∥⃗ q ≲[ i ] p' ∥⃗  q
-≲i∥⃗-cong-l b = ≲i∥⃗-cong b ≲irefl
+≲i∥ʳ-cong-l : ∀ {i A B E} {{_ : Ord A}}  {{_ : Ord B}} {{_ : Concurrent E}} {p p' : CTree E A ∞}{q : CTree E B ∞}
+  → p ≲[ i ] p' → p ∥ʳ q ≲[ i ] p' ∥ʳ  q
+≲i∥ʳ-cong-l b = ≲i∥ʳ-cong b ≲irefl
 
-~i∥⃗-cong-l : ∀ {i A B E} {{_ : Concurrent E}} {p p' : CTree E A ∞}{q : CTree E B ∞}
-  → p ~[ i ] p' → p ∥⃗ q ~[ i ] p' ∥⃗  q
-~i∥⃗-cong-l b = ~i∥⃗-cong b ~irefl
-
-
-≲i∥⃗-cong-r : ∀ {i A B E} {{_ : Ord B}} {{_ : Concurrent E}} {p : CTree E A ∞}{q q' : CTree E B ∞}
-  → q ≲[ i ] q' → p ∥⃗ q ≲[ i ] p ∥⃗ q'
-≲i∥⃗-cong-r b = ≲i∥⃗-cong {{≡-Ord}} ~irefl b
+~i∥ʳ-cong-l : ∀ {i A B E} {{_ : Concurrent E}} {p p' : CTree E A ∞}{q : CTree E B ∞}
+  → p ~[ i ] p' → p ∥ʳ q ~[ i ] p' ∥ʳ  q
+~i∥ʳ-cong-l b = ~i∥ʳ-cong b ~irefl
 
 
-~i∥⃗-cong-r : ∀ {i A B E} {{_ : Concurrent E}} {p : CTree E A ∞}{q q' : CTree E B ∞}
-  → q ~[ i ] q' → p ∥⃗ q ~[ i ] p ∥⃗ q'
-~i∥⃗-cong-r b = ~i∥⃗-cong ~irefl b
+≲i∥ʳ-cong-r : ∀ {i A B E} {{_ : Ord B}} {{_ : Concurrent E}} {p : CTree E A ∞}{q q' : CTree E B ∞}
+  → q ≲[ i ] q' → p ∥ʳ q ≲[ i ] p ∥ʳ q'
+≲i∥ʳ-cong-r b = ≲i∥ʳ-cong {{≡-Ord}} ~irefl b
+
+
+~i∥ʳ-cong-r : ∀ {i A B E} {{_ : Concurrent E}} {p : CTree E A ∞}{q q' : CTree E B ∞}
+  → q ~[ i ] q' → p ∥ʳ q ~[ i ] p ∥ʳ q'
+~i∥ʳ-cong-r b = ~i∥ʳ-cong ~irefl b

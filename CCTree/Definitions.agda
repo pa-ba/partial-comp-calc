@@ -1,4 +1,4 @@
-{-# OPTIONS --copatterns --sized-types --guardedness #-}
+{-# OPTIONS --sized-types #-}
 
 module CCTree.Definitions where
 open import Preorder
@@ -20,31 +20,31 @@ open import Relation.Binary.PropositionalEquality
 open import Data.Nat
 open import Relation.Nullary
 
-infixl 7 _∥⃗_
+infixl 7 _∥ʳ_
 infixl 7 _⊕_
 infixl 5 _>>=_
 infixl 5 _>>_
 
 
 mutual
-  private data CCTree' (E : Set → Set) (A : Set) (i : Size) : Set₁ where
+  private data CCTree' (E : Set → Set₁) (A : Set) (i : Size) : Set₂ where
     now'   : (v : A) → CCTree' E A i
     later' : (p : ∞CCTree E A i) → CCTree' E A i
     _⊕'_   : (p q : CCTree' E A i) → CCTree' E A i
     ∅'     : CCTree' E A i
     eff'   : ∀ {B} → (e : E B) → (c : B → CCTree' E A i) → CCTree' E A i
     _>>='_ : ∀ {B} → CCTree' E B i → (B → CCTree' E A i) → CCTree' E A i
-    _∥⃗'_ : ∀ {B} → CCTree' E B i → CCTree' E A i → CCTree' E A i
+    _∥ʳ'_ : ∀ {B} → CCTree' E B i → CCTree' E A i → CCTree' E A i
     interpSt' : ∀ {F S}  {{_ : Concurrent F}} → S → (∀ {B} → S → F B → CTree E (B × S) ∞) → CCTree' F A i → CCTree' E A i
 
-  record ∞CCTree E (A : Set) (i : Size) : Set₁ where
+  record ∞CCTree E (A : Set) (i : Size) : Set₂ where
     coinductive
     constructor delay
     field
       force : {j : Size< i} → CCTree' E A j
 
 open ∞CCTree public
-CCTree : (Set → Set) → Set → Size → Set₁
+CCTree : (Set → Set₁) → Set → Size → Set₂
 CCTree = CCTree'
 
 
@@ -58,7 +58,7 @@ mutual
   ⟦ ∅' ⟧ k = CT.∅
   ⟦ eff' e c ⟧ k = CT.eff e (λ r → ⟦ c r ⟧ k)
   ⟦ p >>=' f ⟧ k = ⟦ p ⟧ (λ r → ⟦ f r ⟧ k)
-  ⟦ p ∥⃗' q ⟧ k =  ⟦ p ⟧ CT.now CT.∥⃗ ⟦ q ⟧ k
+  ⟦ p ∥ʳ' q ⟧ k =  ⟦ p ⟧ CT.now CT.∥ʳ ⟦ q ⟧ k
   ⟦ interpSt' s f p ⟧ k = CT.interpSt s f (⟦ p ⟧ CT.now) CT.>>= k
   
   ⟦_⟧∞ : ∀ {i A E} {{_ : Concurrent E}} → ∞CCTree E A i → ∀ {R} → (A → CTree E R i) → ∞CTree E R i
@@ -84,8 +84,8 @@ eff = eff'
 _>>=_ : ∀ {E A i}{B} → CCTree E B i → (B → CCTree E A i) → CCTree E A i
 _>>=_ = _>>='_
 
-_∥⃗_ : ∀ {E A i} {B} → {{_ : Concurrent E}} → CCTree E B i → CCTree E A i → CCTree E A i
-_∥⃗_ = _∥⃗'_
+_∥ʳ_ : ∀ {E A i} {B} → {{_ : Concurrent E}} → CCTree E B i → CCTree E A i → CCTree E A i
+_∥ʳ_ = _∥ʳ'_
 
 
 -- Monadic return operator
@@ -98,18 +98,18 @@ interpSt : ∀ {E A i F S}  {{_ : Concurrent E}} {{_ : Concurrent F}} → S → 
 interpSt s f = interpSt' s (λ s e → ⟦ f s e ⟧ CT.now)
 
 
-CCTree⊥ : (Set → Set) → Set → Size → Set₁
+CCTree⊥ : (Set → Set₁) → Set → Size → Set₂
 CCTree⊥ E A i = CCTree (Stuck E) A i
 
 
-∞CCTree⊥ : (Set → Set) → Set → Size → Set₁
+∞CCTree⊥ : (Set → Set₁) → Set → Size → Set₂
 ∞CCTree⊥ E A i = ∞CCTree (Stuck E) A i
 
 stuck : ∀ {E A} → CCTree⊥ E A ∞
 stuck = eff stuckEff ⊥-elim
 
-get : ∀ {E A} → Memory A → Reg → CCTree⊥ E A ∞
-get m r with (m #[ r ])
+get : ∀ {E A} → Reg → Memory A → CCTree⊥ E A ∞
+get r m with (get' r m)
 ... | (just v) = return v
 ... | nothing = stuck
 
@@ -164,7 +164,7 @@ interp f = interpSt tt (λ s x → map (λ y → y , tt) (f x))
 ≲icong ∅' b = CT.≲irefl
 ≲icong (eff' e c) b = CT.≲ieff e (λ r → ≲icong (c r) b)
 ≲icong (p >>=' f) b = ≲icong p λ r → ≲icong (f r) b
-≲icong (p ∥⃗' q) b = CT.≲i∥⃗-cong-r (≲icong q b)
+≲icong (p ∥ʳ' q) b = CT.≲i∥ʳ-cong-r (≲icong q b)
 ≲icong (interpSt' s f p) b = CT.≲i>>=-cong-r (CT.interpSt s f (⟦ p ⟧ CT.now)) b
 
 ~icong : ∀ {E A B i} {{_ : Concurrent E}} (p : CCTree E A ∞) {k k' : A → CTree E B ∞}
@@ -180,7 +180,7 @@ interp f = interpSt tt (λ s x → map (λ y → y , tt) (f x))
 ~icong-map ∅' = CT.~irefl
 ~icong-map (eff' e c) = CT.~ieff e (λ r → ~icong-map (c r))
 ~icong-map (p >>=' g) = CT.~itrans (~icong-map p) (~icong p (λ r → ~icong-map (g r))) 
-~icong-map (p ∥⃗' q) = CT.~itrans (CT.~i∥⃗-map-r (⟦ p ⟧ CT.now) _) (CT.~i∥⃗-cong-r (~icong-map q))
+~icong-map (p ∥ʳ' q) = CT.~itrans (CT.~i∥ʳ-map-r (⟦ p ⟧ CT.now) _) (CT.~i∥ʳ-cong-r (~icong-map q))
 ~icong-map (interpSt' s h p) = CT.~i>>=-assoc (CT.interpSt s h (⟦ p ⟧ CT.now))
 
 
@@ -195,7 +195,7 @@ interp f = interpSt tt (λ s x → map (λ y → y , tt) (f x))
 ⊥≲icong ∅' b = CT.⊥≲irefl
 ⊥≲icong (eff' e c) b = CT.⊥≲ieff e (λ r → ⊥≲icong (c r) b)
 ⊥≲icong (p >>=' f) b = ⊥≲icong p λ r → ⊥≲icong (f r) b
-⊥≲icong (p ∥⃗' q) b = CT.⊥≲i∥⃗-cong-r (⊥≲icong q b)
+⊥≲icong (p ∥ʳ' q) b = CT.⊥≲i∥ʳ-cong-r (⊥≲icong q b)
 ⊥≲icong (interpSt' s f p) b = CT.⊥≲i>>=-cong-r (CT.interpSt s f (⟦ p ⟧ CT.now)) b
 
 ⊥~icong : ∀ {E A B i}{{_ : Concurrent E}} (p : CCTree⊥ E A ∞) {k k' : A → CTree⊥ E B ∞}

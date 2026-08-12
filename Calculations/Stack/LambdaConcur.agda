@@ -1,4 +1,4 @@
-{-# OPTIONS --copatterns --sized-types --guardedness #-}
+{-# OPTIONS --sized-types #-}
 
 ------------------------------------------------------------------------
 -- Calculation for lambda calculus + fork/send/receive + channels 
@@ -24,7 +24,7 @@ Chan : Set
 Chan = ℕ
 
 
-data ChanEff : Set → Set where
+data ChanEff : Set → Set₁ where
   SendInt    : Chan → ℕ → ChanEff ⊤
   ReceiveInt : Chan → ChanEff ℕ
   NewChan    : ChanEff Chan
@@ -115,7 +115,7 @@ mutual
                           m ← eval y e >>= getNum
                           return (Num (n + m))
   eval (Fork x)    e = do ch ← newChan
-                          eval x (Num ch ∷ e) ∥⃗ return (Num ch)
+                          eval x (Num ch ∷ e) ∥ʳ return (Num ch)
   eval (Send x y)  e = do ch ← eval x e >>= getNum
                           n ← eval y e >>= getNum
                           send ch n
@@ -182,6 +182,10 @@ nil = []
 Conf : Set
 Conf = Stack × Env'
 
+-- We use the TERMINATING pragma since Agda does not recognize that
+-- `exec` is terminating. We prove that `exec` is terminating
+-- separately in the `Terminating.Stack.LambdaConcur` module.
+
 {-# TERMINATING #-}
 mutual
   exec : ∀ {i} → Code → Conf → CCTree⊥ ChanEff Conf i
@@ -194,7 +198,7 @@ mutual
   exec (SEND c)     (VAL (Num' n) ∷ VAL (Num' ch) ∷ s , e) = do send ch n; exec c (VAL (Num' n) ∷ s , e)
   exec (RECEIVE c)  (VAL (Num' ch) ∷ s , e)                = do n ← receive ch; exec c (VAL (Num' n) ∷ s , e)
   exec (FORK c' c)  (s , e)                                = do ch ← newChan
-                                                                exec c' ([] , Num' ch ∷ e) ∥⃗ exec c (VAL (Num' ch) ∷ s , e)
+                                                                exec c' ([] , Num' ch ∷ e) ∥ʳ exec c (VAL (Num' ch) ∷ s , e)
   exec HALT         (s , e)                                = return (s , e)
   exec _            _                                      = stuck
 
@@ -436,24 +440,24 @@ spec i (Fork x) {e} {s} {c} =
   (do v ← eval (Fork x) e; exec c (VAL (conv v) ∷ s , convE e))
  ≡⟨⟩
   (do v ← do ch ← newChan
-             eval x (Num ch ∷ e) ∥⃗ return (Num ch)
+             eval x (Num ch ∷ e) ∥ʳ return (Num ch)
       exec c (VAL (conv v) ∷ s , convE e))
  ~⟨ ~i>>=-assoc _ ⟩
   (do ch ← newChan
-      v ← eval x (Num ch ∷ e) ∥⃗ return (Num ch)
+      v ← eval x (Num ch ∷ e) ∥ʳ return (Num ch)
       exec c (VAL (conv v) ∷ s , convE e))
- ~⟨ ~i>>=-cong-r _ (λ ch' → ~i∥⃗->>=) ⟩
+ ~⟨ ~i>>=-cong-r _ (λ ch' → ~i∥ʳ->>=) ⟩
   (do ch ← newChan
-      eval x (Num ch ∷ e) ∥⃗ (return (Num ch) >>= λ v → exec c (VAL (conv v) ∷ s , convE e)))
- ~⟨ ~i>>=-cong-r _ (λ ch' → ~i∥⃗-cong-r ~ireturn->>=) ⟩
+      eval x (Num ch ∷ e) ∥ʳ (return (Num ch) >>= λ v → exec c (VAL (conv v) ∷ s , convE e)))
+ ~⟨ ~i>>=-cong-r _ (λ ch' → ~i∥ʳ-cong-r ~ireturn->>=) ⟩
   (do ch ← newChan
-      eval x (Num ch ∷ e) ∥⃗ exec c (VAL (Num' ch) ∷ s , convE e))
- ~⟨ ~i>>=-cong-r _ (λ ch' → ~i∥⃗-map-l _ _) ⟩
+      eval x (Num ch ∷ e) ∥ʳ exec c (VAL (Num' ch) ∷ s , convE e))
+ ~⟨ ~i>>=-cong-r _ (λ ch' → ~i∥ʳ-map-l _ _) ⟩
   (do ch ← newChan
-      (eval x (Num ch ∷ e) >>= λ v → exec HALT ([ VAL (conv v) ] , Num' ch ∷ convE e)) ∥⃗ exec c (VAL (Num' ch) ∷ s , convE e))
- ⊥~⟨ ⊥~i>>=-cong-r _ (λ ch' → ⊥~i∥⃗-cong-l (spec i x)) ⟩
+      (eval x (Num ch ∷ e) >>= λ v → exec HALT ([ VAL (conv v) ] , Num' ch ∷ convE e)) ∥ʳ exec c (VAL (Num' ch) ∷ s , convE e))
+ ⊥~⟨ ⊥~i>>=-cong-r _ (λ ch' → ⊥~i∥ʳ-cong-l (spec i x)) ⟩
   (do ch ← newChan
-      exec (comp x HALT) ([] , Num' ch ∷ convE e) ∥⃗ exec c (VAL (Num' ch) ∷ s , convE e))
+      exec (comp x HALT) ([] , Num' ch ∷ convE e) ∥ʳ exec c (VAL (Num' ch) ∷ s , convE e))
  ≡⟨⟩
   exec (FORK (comp x HALT) c) (s , convE e)
  ∎
@@ -466,9 +470,9 @@ spec i (Fork x) {e} {s} {c} =
 compile : Expr → Code
 compile e = comp e HALT
 
-specCompile : ∀ s x →
+specCompile : DNE → ∀ s x →
   (do v ← evaluate x; return (VAL (conv v) ∷ s , []))  ⊥~ execute (compile x) s
-specCompile s x = ⊥~i-⊥~ λ i →
+specCompile dne s x = ⊥~i-⊥~ dne λ i →
   (do v ← evaluate x; return (VAL (conv v) ∷ s , []))
  ≡⟨⟩
   (do v ← interpSt⊥ 0 hanChan (eval x []); return (VAL (conv v) ∷ s , []))
@@ -555,7 +559,7 @@ mutual
       λ x₁ → safeP->>= (speff (λ r → spnow tt))
       (λ x₂ → spnow ⊢num)
   eval-safe {i}  {γ = γ}  (⊢fork {Γ} {x} {τ} T) E = safeP->>= (speff (λ r → spnow tt))
-    (λ x₁ → safeP-∥⃗ (safeP-weaken (λ _ → tt) (eval-safe {i} T (⊢ccons ⊢num E))) (spnow ⊢num))
+    (λ x₁ → safeP-∥ʳ (safeP-weaken (λ _ → tt) (eval-safe {i} T (⊢ccons ⊢num E))) (spnow ⊢num))
 
   ∞eval-safe : ∀ {i Γ t τ γ} → (Γ ⊢ t ∶ τ) → (⊢c γ ∶ Γ) → ∞safeP {i} (λ v → ⊢v v ∶ τ ) (∞eval t γ)
   spforce (∞eval-safe T G) = eval-safe T G
@@ -572,10 +576,10 @@ evaluate-safe T = safeP-interpSt⊥ (safeP-safe (eval-safe T ⊢cnil)) λ {B} {s
 -- stronger version of the compiler correctness property for
 -- well-typed terms
 
-specCompileTyped : ∀ s x τ →
+specCompileTyped : DNE → ∀ s x τ →
   [] ⊢ x ∶ τ →
   (do v ← evaluate x
       return (VAL (conv v) ∷ s , []))
   ~
   (execute (compile x) s)
-specCompileTyped s x τ T = ⊥~-~' (safeP->>= (evaluate-safe T) (λ _ → spnow tt)) (specCompile s x)
+specCompileTyped dne s x τ T = ⊥~-~' (safeP->>= (evaluate-safe T) (λ _ → spnow tt)) (specCompile dne s x)

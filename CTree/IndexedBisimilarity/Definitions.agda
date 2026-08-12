@@ -1,4 +1,4 @@
-{-# OPTIONS --sized-types --large-indices #-}
+{-# OPTIONS --sized-types #-}
 
 ------------------------------------------------------
 -- Definition of step-indexed (strong) bisimilarity
@@ -25,14 +25,14 @@ lsuc : ∀ {E A} → label E A → ℕ → ℕ
 lsuc ⟨ x ⟩ i = suc i
 lsuc τ i = i
 
-lpred : (Set → Set) → Set → Set₁
-lpred E A = label E A → Set
+lpred : (Set → Set₁) → Set → Set₂
+lpred E A = label E A → Set₁
 
 
-data Eff (E : Set → Set) : Set₁ where
+data Eff (E : Set → Set₁) : Set₁ where
   MkEff : ∀ {A} → (E A) → Eff E
 
-epred : (Set → Set) → Set₁
+epred : (Set → Set₁) → Set₁
 epred E = Eff E → Set
 
 data _??_ {E A} (ep : epred E) : lpred E A where
@@ -140,7 +140,7 @@ l ⊑≡ l' =  _⊑_ {{LabOrd {{≡-Ord}}}} l l'
 ~ilsafe : ∀ {E A L i} {p q : CTree' E A} → ¬ lsafe L p → p ~̂ L [ i ] q
 ~ilsafe = ≲ilsafe {{≡-Ord}}
 
-data AnyEff  {E : Set → Set} (e : Eff E) : Set where
+data AnyEff  {E : Set → Set₁} (e : Eff E) : Set where
   MkAnyEff : AnyEff e
 
 AnyLab : ∀ {E A} {e : label E A} → AnyEff ?? e

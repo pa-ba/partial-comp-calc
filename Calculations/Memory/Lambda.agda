@@ -1,4 +1,4 @@
-{-# OPTIONS --copatterns --sized-types --guardedness #-}
+{-# OPTIONS --sized-types #-}
 
 ------------------------------------------------------------------------
 -- Calculation for the lambda calculus
@@ -75,7 +75,7 @@ mutual
 ---------------------
 
 data Code : Set where
-  LOAD : ℕ -> Code -> Code
+  CONST : ℕ -> Code -> Code
   STORE : Reg -> Code -> Code
   ADD : Reg → Code -> Code
   LOOKUP : ℕ → Code → Code
@@ -104,11 +104,11 @@ getClo' _ = stuck
 
 
 ~iset-getNum'->>= : ∀ {A i} {m : Memory Value'} {r : Reg} {v : ℕ} {f : ℕ → CTree⊥ None A ∞}
-  → (get (m #[ r ← Num' v ]) r >>= getNum' >>= f) ~[ i ] f v
+  → (get r (set r (Num' v) m) >>= getNum' >>= f) ~[ i ] f v
 ~iset-getNum'->>= {m = m} {r} {v} rewrite getSet {r = r} {Num' v} {m} = ~irefl
 
 ~iset-getClo'->>= : ∀ {A i} {m : Memory Value'} {r : Reg} {c e} {f : Code × Env' → CTree⊥ None A ∞}
-  → (get (m #[ r ← Clo' c e ]) r >>= getClo' >>= f) ~[ i ] f (c , e)
+  → (get r (set r (Clo' c e) m) >>= getClo' >>= f) ~[ i ] f (c , e)
 ~iset-getClo'->>= {m = m} {r} {c} {e} rewrite getSet {r = r} {Clo' c e} {m} = ~irefl
 
 
@@ -119,19 +119,23 @@ Conf : Set
 Conf = Value' × Env' × Lam × Memory Value'
 
 
+-- We use the TERMINATING pragma since Agda does not recognize that
+-- `exec` is terminating. We prove that `exec` is terminating
+-- separately in the `Terminating.Memory.Lambda` module.
+
 mutual
   {-# TERMINATING #-}
   exec : ∀ {i} → Code → Conf → CTree⊥ None Conf i
-  exec (LOAD n c) (a , e , l , m) = exec c (Num' n , e , l , m)
-  exec (ADD r c) (Num' a , e , l , m) = do b ← get m r >>= getNum'
+  exec (CONST n c) (a , e , l , m) = exec c (Num' n , e , l , m)
+  exec (ADD r c) (Num' a , e , l , m) = do b ← get r m >>= getNum'
                                            exec c (Num' (b + a) , e , l , m)
-  exec (STORE r c) (a , e , l , m) = exec c (a , e , l , m #[ r ← a ])
+  exec (STORE r c) (a , e , l , m) = exec c (a , e , l , set r a m)
   exec (LOOKUP n c) (a , e , l , m) = do v ← lookup n e
                                          exec c (v , e , l , m)
-  exec (APP r c) (a , e , l , m) = do c' , e' ← get m r >>= getClo'
-                                      later (∞exec c' (a , a ∷ e' , m ∷ l , empty #[ first ← Clo' c e ]))
+  exec (APP r c) (a , e , l , m) = do c' , e' ← get r m >>= getClo'
+                                      later (∞exec c' (a , a ∷ e' , m ∷ l , set first (Clo' c e) empty))
   exec (ABS c' c) (a , e , l , m) = exec c (Clo' c' e  , e , l , m)
-  exec RET (a , e , m' ∷ l , m) = do c' , e' ← get m first >>= getClo'
+  exec RET (a , e , m' ∷ l , m) = do c' , e' ← get first m >>= getClo'
                                      exec c' (a , e' , l , m')
   exec HALT s = return s
   exec _ _ = stuck
@@ -146,7 +150,7 @@ mutual
 
 
 comp : Expr → Reg → Code → Code
-comp (Val n) r c =  LOAD n c
+comp (Val n) r c =  CONST n c
 comp (Add x y) r c = comp x r (STORE r (comp y (next r) (ADD r c)))
 comp (Var n) r c = LOOKUP n c
 comp (App x y) r c = comp x r (STORE r (comp y (next r) (APP r c)))
@@ -167,25 +171,25 @@ instance
 
 exec-mono : ∀ {i} c {a e l l' m m'} → l ⊑ l' → m ⊑ m' → exec c (a , e , l , m) ⊥≲[ i ] exec c (a , e , l' , m')
 exec-mono {i = zero} _ _ _ = ⊥≲izero
-exec-mono (LOAD x c) ⊑l ⊑m = exec-mono c ⊑l ⊑m
+exec-mono (CONST x c) ⊑l ⊑m = exec-mono c ⊑l ⊑m
 exec-mono (STORE x c) ⊑l ⊑m = exec-mono c ⊑l (set-monotone ⊑m)
-exec-mono (ADD x c) {Num' x₁} ⊑l ⊑m = ⊥≲itrans (⊥≲i>>=-assoc (get _ x))
+exec-mono (ADD x c) {Num' x₁} ⊑l ⊑m = ⊥≲itrans (⊥≲i>>=-assoc (get x _))
                                       (⊥≲itrans (⊥≲iget->>= ⊑m)
-                                      (⊥≲itrans (~i-⊥≲i (~isym (~i>>=-assoc (get _ x))))
-                                        (⊥≲i>>=-cong-r (get _ x >>= getNum') (λ _ →
+                                      (⊥≲itrans (~i-⊥≲i (~isym (~i>>=-assoc (get x _))))
+                                        (⊥≲i>>=-cong-r (get x _ >>= getNum') (λ _ →
                                           exec-mono c ⊑l ⊑m))))
 exec-mono (ADD x c) {Clo' x₁ x₂} ⊑l ⊑m = ⊥≲irefl
 exec-mono (LOOKUP x c) ⊑l ⊑m = ⊥≲i>>=-cong-r (lookup x _) λ _ → exec-mono c ⊑l ⊑m
 exec-mono RET {l = .[]} ⊑L-nil ⊑m = ⊥≲irefl
-exec-mono RET {l = .(_ ∷ _)} (⊑L-cons x ⊑l) ⊑m = ⊥≲itrans (⊥≲i>>=-assoc (get _ first))
+exec-mono RET {l = .(_ ∷ _)} (⊑L-cons x ⊑l) ⊑m = ⊥≲itrans (⊥≲i>>=-assoc (get first _))
                                       (⊥≲itrans (⊥≲iget->>= ⊑m)
-                                      ((⊥≲itrans (~i-⊥≲i (~isym (~i>>=-assoc (get _ first))))
-                                        ((⊥≲i>>=-cong-r (get _ first >>= getClo') (λ (c' , e') → 
+                                      ((⊥≲itrans (~i-⊥≲i (~isym (~i>>=-assoc (get first _))))
+                                        ((⊥≲i>>=-cong-r (get first _ >>= getClo') (λ (c' , e') → 
                                           exec-mono c' ⊑l x))))))
-exec-mono {i = suc i} (APP x c) ⊑l ⊑m = ⊥≲itrans (⊥≲i>>=-assoc (get _ x))
+exec-mono {i = suc i} (APP x c) ⊑l ⊑m = ⊥≲itrans (⊥≲i>>=-assoc (get x _))
                                       (⊥≲itrans (⊥≲iget->>= ⊑m)
-                                      ((⊥≲itrans (~i-⊥≲i (~isym (~i>>=-assoc (get _ x))))
-                                        ((⊥≲i>>=-cong-r (get _ x >>= getClo') (λ (c' , e') → 
+                                      ((⊥≲itrans (~i-⊥≲i (~isym (~i>>=-assoc (get x _))))
+                                        ((⊥≲i>>=-cong-r (get x _ >>= getClo') (λ (c' , e') → 
                                           ⊥≲ilater (exec-mono c' (⊑L-cons ⊑m ⊑l) (⊑-refl {{MemoryOrd}}))))))))
 exec-mono (ABS c c') ⊑l ⊑m = exec-mono c' ⊑l ⊑m
 exec-mono HALT ⊑l ⊑m = ⊥≲i⊑ (refl , refl , ⊑l , ⊑m)
@@ -234,7 +238,7 @@ spec i (Val x) {e} {l} {r} {a} {m} {c} F =
    ≡⟨⟩
    exec c (Num' x , convE e , l , m)
    ≡⟨⟩
-   (exec (LOAD x c) (a , convE e , l  , m))
+   (exec (CONST x c) (a , convE e , l  , m))
   ∎
 
 spec i (Add x y) {e} {l} {r} {a} {m} {c} F = 
@@ -255,12 +259,12 @@ spec i (Add x y) {e} {l} {r} {a} {m} {c} F =
      (λ n2 → exec-mono c (⊑-refl {{OrdLam}}) (⊑-set F))) ⟩
   (do n1 ← eval x e >>= getNum
       n2 ← eval y e >>= getNum 
-      exec c (Num' (n1 + n2) , convE e , l , m #[ r ← Num' n1 ]))
+      exec c (Num' (n1 + n2) , convE e , l , set r (Num' n1) m))
   ~⟨ ~i>>=-cong-r (eval x e >>= getNum) (λ n1 → ~i>>=-cong-r (eval y e >>= getNum)
       (λ n2 → ~isym ~iset-getNum'->>=  )) ⟩
   (do n1 ← eval x e >>= getNum
       n2 ← eval y e >>= getNum
-      exec (ADD r c) (Num' n2 , convE e , l , m #[ r ← Num' n1 ]))
+      exec (ADD r c) (Num' n2 , convE e , l , set r (Num' n1) m))
   ⊥≲⟨ ⊥≲i>>=-cong-r (eval x e >>= getNum) (λ n1 → 
       ⊥≲itrans (⊥≲i>>=-assoc (eval y e)) (⊥≲i>>=-cong-r (eval y e)
         (λ {(Num m) → ⊥≲irefl ;
@@ -268,15 +272,15 @@ spec i (Add x y) {e} {l} {r} {a} {m} {c} F =
      ) ⟩
   (do n1 ← eval x e >>= getNum
       v2 ← eval y e
-      exec (ADD r c) (conv v2 , convE e , l , m #[ r ← Num' n1 ]))
+      exec (ADD r c) (conv v2 , convE e , l , set r (Num' n1) m))
   ⊥≲⟨  ⊥≲i>>=-cong-r (eval x e >>= getNum) (λ n1 → spec i y (freeFromSet F)) ⟩
   (do n1 ← eval x e >>= getNum
-      exec (comp y (next r) (ADD r c)) (Num' n1 , convE e , l , m #[ r ← Num' n1 ]))
+      exec (comp y (next r) (ADD r c)) (Num' n1 , convE e , l , set r (Num' n1) m))
   ⊥≲⟨ ⊥≲itrans (⊥≲i>>=-assoc (eval x e)) (⊥≲i>>=-cong-r (eval x e)
         (λ {(Num m) → ⊥≲irefl ;
         (Clo _ _) → ⊥≲istuck })) ⟩
   (do v1 ← eval x e
-      exec (comp y (next r) (ADD r c)) (conv v1 , convE e , l , m #[ r ← conv v1 ]))
+      exec (comp y (next r) (ADD r c)) (conv v1 , convE e , l , set r (conv v1) m))
   ≡⟨⟩
     (do v1 ← eval x e
         exec (STORE r (comp y (next r) (ADD r c))) (conv v1 , convE e , l , m))
@@ -315,32 +319,32 @@ spec (suc i) (App x y) {e} {l} {r} {a} {m} {c} F =
   (do x' , e' ← eval x e >>= getClo
       v ← eval y e
       w ← later (∞eval x' (v ∷ e'))
-      exec RET (conv w , conv v ∷ convE e' , m ∷ l , empty #[ first ← Clo' c (convE e)]))
+      exec RET (conv w , conv v ∷ convE e' , m ∷ l , set first (Clo' c (convE e)) empty))
   ⊥≲⟨ ( ⊥≲i>>=-cong-r (eval x e >>= getClo) λ (x' , e') → 
     ⊥≲i>>=-cong-r (eval y e) λ v → ⊥≲ilater (spec i x' (freeFromSet emptyMemFree))) ⟩
   (do x' , e' ← eval x e >>= getClo
       v ← eval y e
-      later (∞exec (comp x' (next first) RET) (conv v , conv v ∷ convE e' , m ∷ l , empty #[ first ← Clo' c (convE e)])))
+      later (∞exec (comp x' (next first) RET) (conv v , conv v ∷ convE e' , m ∷ l , set first (Clo' c (convE e)) empty)))
   ⊥≲⟨ (⊥≲i>>=-cong-r (eval x e >>= getClo) λ (x' , e') → 
     ⊥≲i>>=-cong-r (eval y e) λ v → ⊥≲ilater (exec-mono (comp x' (next first) RET)
       (⊑L-cons (⊑-set F) (⊑-refl {{OrdLam}})) (⊑-refl {{MemoryOrd}}))) ⟩
   (do x' , e' ← eval x e >>= getClo
       v ← eval y e
-      later (∞exec (comp x' (next first) RET) (conv v , conv v ∷ convE e' , (m #[ r ← Clo' (comp x' (next first) RET) (convE e') ]) ∷ l , empty #[ first ← Clo' c (convE e)])))
+      later (∞exec (comp x' (next first) RET) (conv v , conv v ∷ convE e' , (set r (Clo' (comp x' (next first) RET) (convE e')) m) ∷ l , set first (Clo' c (convE e)) empty)))
   ~⟨ ( ~i>>=-cong-r (eval x e >>= getClo) λ (x' , e') → 
     ~i>>=-cong-r (eval y e) λ v → ~isym ~iset-getClo'->>= ) ⟩
   (do x' , e' ← eval x e >>= getClo
       v ← eval y e
-      exec (APP r c) (conv v , convE e , l , m #[ r ← Clo' (comp x' (next first) RET) (convE e')]))
+      exec (APP r c) (conv v , convE e , l , set r (Clo' (comp x' (next first) RET) (convE e')) m))
   ⊥≲⟨ (⊥≲i>>=-cong-r (eval x e >>= getClo) λ (x' , e') → spec (suc i) y (freeFromSet F)) ⟩
   (do x' , e' ← eval x e >>= getClo
-      exec (comp y (next r) (APP r c)) (conv (Clo x' e') , convE e , l , m #[ r ← Clo' (comp x' (next first) RET) (convE e')]))
+      exec (comp y (next r) (APP r c)) (conv (Clo x' e') , convE e , l , set r (Clo' (comp x' (next first) RET) (convE e')) m))
   ⊥≲⟨  ⊥≲itrans (⊥≲i>>=-assoc (eval x e)) (⊥≲i>>=-cong-r (eval x e)
         (λ {(Num m) → ⊥≲istuck ;
         (Clo _ _) → ⊥≲irefl }))
       ⟩
   (do v ← eval x e
-      exec (comp y (next r) (APP r c)) (conv v , convE e , l , m #[ r ← conv v ]))
+      exec (comp y (next r) (APP r c)) (conv v , convE e , l , set r (conv v) m))
   ≡⟨⟩
     (do v ← eval x e
         exec (STORE r (comp y (next r) (APP r c))) (conv v , convE e , l , m))
@@ -434,11 +438,11 @@ compile : Expr → Code
 compile e = comp e first HALT
 
 
-specCompile : ∀ a x →
+specCompile : DNE → ∀ a x →
   map conv (eval x [])
   ⊥~
   (map proj₁ (exec (compile x) (a , [] , [] , empty)))
-specCompile a x =  ⊥~i-⊥~ λ i → ⊥≲i-⊥~i (λ e → e) (
+specCompile dne a x =  ⊥~i-⊥~ dne λ i → ⊥≲i-⊥~i (λ e → e) (
   map conv (eval x [])
     ≡⟨⟩
   (do v ← eval x []
@@ -454,9 +458,9 @@ specCompile a x =  ⊥~i-⊥~ λ i → ⊥≲i-⊥~i (λ e → e) (
   ∎
   )
 
-specCompileTyped : ∀ a x τ →
+specCompileTyped : DNE → ∀ a x τ →
   [] ⊢ x ∶ τ →
   map conv (eval x [])
   ~
   (map proj₁ (exec (compile x) (a , [] , [] , empty)))
-specCompileTyped a x τ T = ⊥~-~ (safeP->>= (eval-safe T ⊢cnil) λ _ → spnow _) (specCompile a x)
+specCompileTyped dne a x τ T = ⊥~-~ (safeP->>= (eval-safe T ⊢cnil) λ _ → spnow _) (specCompile dne a x)

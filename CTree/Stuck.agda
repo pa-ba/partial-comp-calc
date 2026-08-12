@@ -1,5 +1,5 @@
 
-{-# OPTIONS --copatterns --sized-types --guardedness --large-indices #-}
+{-# OPTIONS --sized-types #-}
 
 -- This module defines an effect that allows us to express a stuck
 -- computation in choice trees. This is relevant for the formulation
@@ -27,27 +27,27 @@ open import Induction.WellFounded
 open import Data.Product.Relation.Binary.Lex.Strict
 open import Relation.Binary.Construct.Closure.Transitive hiding (map)
 
-open import Memory public
+open import Memory public renaming (get to get')
 
-data Stuck (E : Set → Set) : Set → Set where
+data Stuck (E : Set → Set₁) : Set → Set₁ where
   stuckEff : Stuck E ⊥
   notStuck : ∀ {A} → E A → Stuck E A
 
-CTree⊥ : (Set → Set) → Set → Size → Set₁
+CTree⊥ : (Set → Set₁) → Set → Size → Set₁
 CTree⊥ E A i = CTree (Stuck E) A i
 
-CTree⊥' : (Set → Set) → Set → Set₁
+CTree⊥' : (Set → Set₁) → Set → Set₁
 CTree⊥' E A = CTree' (Stuck E) A
 
 
-∞CTree⊥ : (Set → Set) → Set → Size → Set₁
+∞CTree⊥ : (Set → Set₁) → Set → Size → Set₁
 ∞CTree⊥ E A i = ∞CTree (Stuck E) A i
 
 
 stuck : ∀ {E A} → CTree⊥ E A ∞
 stuck = eff stuckEff ⊥-elim
 
-interpMap⊥ : ∀ {E F : Set → Set} {S} → (∀ {B} → S → E B → CTree⊥ F (B × S) ∞) → (∀ {B} → S → Stuck E B → CTree⊥ F (B × S) ∞)
+interpMap⊥ : ∀ {E F : Set → Set₁} {S} → (∀ {B} → S → E B → CTree⊥ F (B × S) ∞) → (∀ {B} → S → Stuck E B → CTree⊥ F (B × S) ∞)
 interpMap⊥ f s stuckEff = eff stuckEff ⊥-elim
 interpMap⊥ f s (notStuck x) = f s x
 
@@ -59,7 +59,7 @@ interpSt⊥ s f p = interpSt s (interpMap⊥ f) p
 ∞interpSt⊥ s f p = ∞interpSt s (interpMap⊥ f) p
 
 
-get : ∀ {E A} → Memory A → Reg → CTree⊥ E A ∞
-get m r with (m #[ r ])
+get : ∀ {E A} → Reg → Memory A → CTree⊥ E A ∞
+get r m with (get' r m)
 ... | (just v) = return v
 ... | nothing = stuck

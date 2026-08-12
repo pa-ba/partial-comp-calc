@@ -40,16 +40,13 @@ abstract
       }
   
   
-  infixl 10 _#[_←_]
-  infixl 10 _#[_]
-    
   empty : ∀ {A} → Memory A
   empty _ = nothing
-  
-  _#[_←_] : ∀ {E} → Memory E → Reg → E → Memory E
-  _#[_←_] = λ m r e → λ r' → if r' == r then just e else m r'
-  _#[_] : ∀ {E} → Memory E → Reg → Maybe E
-  _#[_] = λ m r → m r
+
+  set : ∀ {E} → Reg → E → Memory E → Memory E
+  set = λ r e m → λ r' → if r' == r then just e else m r'
+  get : ∀ {E} → Reg → Memory E → Maybe E
+  get = λ r m → m r
   freeFrom : ∀ {E} → Reg → Memory E → Set
   freeFrom = λ r m → (∀ r' → r ≤ r' → m r' ≡ nothing)
   
@@ -74,10 +71,10 @@ abstract
   emptyMemFree : ∀ {E} → freeFrom first (empty {E})
   emptyMemFree _ _ = refl
   
-  getSet : ∀ {E} {r : Reg} {v : E} {m : Memory E} → (m #[ r ← v ]) #[ r ] ≡ just v
+  getSet : ∀ {E} {r : Reg} {v : E} {m : Memory E} → get r (set r v m) ≡ just v
   getSet {r = r} rewrite T-true (≡⇒≡ᵇ r r refl) = refl
   
-  ⊑-set : ∀ {E} {r : Reg} {m : Memory E} {v : E} → freeFrom r m → m ⊑ m #[ r ← v ]
+  ⊑-set : ∀ {E} {r : Reg} {m : Memory E} {v : E} → freeFrom r m → m ⊑ set r v m
   ⊑-set {r = r} f r' e eq with T? (r' == r)
   ... | .false because ofⁿ p rewrite T-false p  =  eq
   ... | .true because ofʸ p rewrite ≡ᵇ⇒≡ r' r p rewrite f r ≤-refl with eq
@@ -85,7 +82,7 @@ abstract
   
   
   freeFromSet : ∀ {E} {r : Reg} {m : Memory E} {v : E}
-    → freeFrom r m →  freeFrom (next r) (m #[ r ← v ])
+    → freeFrom r m →  freeFrom (next r) (set r v m)
   freeFromSet {r = r} ff r' le with T? (r' == r)
   ... | .false because ofⁿ p rewrite T-false p =  ff r' (<⇒≤ le)
   ... | .true because ofʸ p rewrite ≡ᵇ⇒≡ r' r p with Data.Nat.Properties.<-irrefl refl le
@@ -93,15 +90,14 @@ abstract
   
   
   set-monotone : ∀ {E} {r : Reg} {m m' : Memory E} {v : E}
-    → m ⊑ m' → m #[ r ← v ] ⊑ m' #[ r ← v ]
+    → m ⊑ m' → set r v m ⊑ set r v m'
   set-monotone {r = r} l r' e eq  with T? (r' == r)
   ... | .true because ofʸ p rewrite T-true p = eq
   ... | .false because ofⁿ p rewrite T-false p = l r' e eq
   
   ⊑-get : ∀ {E} {r : Reg} {m m' : Memory E} {v : E}
-    → m ⊑ m' → m #[ r ] ≡ just v → m' #[ r ] ≡ just v
+    → m ⊑ m' → get r m ≡ just v → get r m' ≡ just v
   ⊑-get {r = r} {v = v} l eq = l r v eq
-  
 
 
 data _⊑M_  {A : Set} {{_ : Ord A}} : (Maybe A) → (Maybe A) → Set where

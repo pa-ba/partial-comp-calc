@@ -1,4 +1,4 @@
-{-# OPTIONS --copatterns --sized-types --guardedness #-}
+{-# OPTIONS --sized-types #-}
 
 
 ------------------------------------------------------------------------
@@ -25,7 +25,7 @@ open import Function
 -- Effects --
 -------------
 
-data PrintEff : Set → Set where
+data PrintEff : Set → Set₁ where
   PrintInt : ℕ → PrintEff ⊤
 
 
@@ -85,8 +85,8 @@ eval Flip = return (B true) ⊕ return (B false)
 data Code : Set where
   PUSH : Value → Code → Code
   ADD : Code → Code
-  JPC : Code → Code → Code
   PRINT : Code → Code
+  JPC : Code → Code → Code
   FLIP : Code → Code
   HALT : Code
 
@@ -256,12 +256,12 @@ spec i Flip {s} {c} =
 
 -- Here we lift the correctness property into its non-indexed form
 -- (i.e. in terms of bisimilarity).
-spec' : ∀ s c x →
+spec' : DNE → ∀ s c x →
   (do v ← eval x
       exec c (v ∷ s))
   ⊥~
   (exec (comp x c) s)
-spec' s c x =  ⊥~i-⊥~  (λ i → spec i x)
+spec' dne s c x =  ⊥~i-⊥~ dne  (λ i → spec i x)
 
 ------------------------
 -- top-level compiler --
@@ -271,12 +271,12 @@ compile : Expr → Code
 compile e = comp e HALT
 
 
-specCompile : ∀ s x →
+specCompile : DNE → ∀ s x →
   (do v ← eval x
       return (v ∷ s))
   ⊥~
   (exec (compile x) s)
-specCompile s x = spec' s HALT x
+specCompile dne s x = spec' dne s HALT x
 
 
 -- Well-typed terms never go wrong and are thus strongly bisimilar to
@@ -327,11 +327,11 @@ eval-safe ⊢flip = spplus (spnow ⊢B) (spnow ⊢B)
 -- stronger version of the compiler correctness property for
 -- well-typed terms
 
-specCompileTyped : ∀ s x τ →
+specCompileTyped : DNE → ∀ s x τ →
   ⊢ x ∶ τ →
   (do v ← eval x
       return (v ∷ s))
   ~
   (exec (compile x) s)
-specCompileTyped s x τ T = ⊥~-~ (safeP->>= (eval-safe T) λ _ → spnow _) (specCompile s x)
+specCompileTyped dne s x τ T = ⊥~-~ (safeP->>= (eval-safe T) λ _ → spnow _) (specCompile dne s x)
     

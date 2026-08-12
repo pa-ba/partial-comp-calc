@@ -1,4 +1,4 @@
-{-# OPTIONS --copatterns --sized-types --guardedness #-}
+{-# OPTIONS --sized-types #-}
 
 
 ------------------------------------------------------------------------
@@ -148,6 +148,10 @@ mutual
   convE [] = []
   convE (x ∷ xs) = conv x ∷ convE xs
 
+
+-- We use the TERMINATING pragma since Agda does not recognize that
+-- `exec` is terminating. We prove that `exec` is terminating
+-- separately in the `Terminating.Stack.LambdaFix` module.
 
 mutual
   {-# TERMINATING #-}
@@ -329,12 +333,12 @@ spec (suc i) Fix {s} {c} {e} =
 
 -- Here we lift the correctness property into its non-indexed form
 -- (i.e. in terms of bisimilarity).
-spec' : ∀ s c e x →
+spec' : DNE → ∀ s c e x →
   (do v ← eval x e
       exec c (VAL (conv v) ∷ s , convE e))
   ⊥~
   (exec (comp x c) (s , convE e))
-spec' s c e x =  ⊥~i-⊥~  (λ i → spec i x)
+spec' dne s c e x =  ⊥~i-⊥~ dne  (λ i → spec i x)
 
 ------------------------
 -- top-level compiler --
@@ -344,12 +348,12 @@ compile : Expr → Code
 compile e = comp e HALT
 
 
-specCompile : ∀ s x →
+specCompile : DNE → ∀ s x →
   (do v ← eval x []
       return (VAL (conv v) ∷ s , []))
   ⊥~
   (exec (compile x) (s , []))
-specCompile s x = spec' s HALT [] x
+specCompile dne s x = spec' dne s HALT [] x
 
 
 -- Well-typed terms never go wrong and are thus strongly bisimilar to
@@ -423,10 +427,10 @@ mutual
 -- stronger version of the compiler correctness property for
 -- well-typed terms
 
-specCompileTyped : ∀ s x τ →
+specCompileTyped : DNE → ∀ s x τ →
   [] ⊢ x ∶ τ →
   (do v ← eval x []
       return (VAL (conv v) ∷ s , []))
   ~
   (exec (compile x) (s , []))
-specCompileTyped s x τ T = ⊥~-~ (safeP->>= (eval-safe T ⊢cnil) λ _ → spnow _) (specCompile s x)
+specCompileTyped dne s x τ T = ⊥~-~ (safeP->>= (eval-safe T ⊢cnil) λ _ → spnow _) (specCompile dne s x)

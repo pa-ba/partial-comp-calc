@@ -181,16 +181,16 @@ _ ∥₃ _ = ∅ ↑
 ∥-lsafe-r ls {l = τ} tr = isEffPredτ
 
 
-∥⃗-lsafe-l : ∀ {E L A B} {{_ : Concurrent E}} {p : CTree E A ∞} {q : CTree E B ∞} → lsafe L ((p ∥⃗ q) ↑) → lsafe L (p ↑)
-∥⃗-lsafe-l ls {l = ⟨ ε x ⟩} tr with ls (map-step2 _ proj₂ retFreeε (∥-stepLeft (LS retFreeε tr)))
+∥ʳ-lsafe-l : ∀ {E L A B} {{_ : Concurrent E}} {p : CTree E A ∞} {q : CTree E B ∞} → lsafe L ((p ∥ʳ q) ↑) → lsafe L (p ↑)
+∥ʳ-lsafe-l ls {l = ⟨ ε x ⟩} tr with ls (map-step2 _ proj₂ retFreeε (∥-stepLeft (LS retFreeε tr)))
 ... | isEffPredε .x x₁ = isEffPredε x x₁
-∥⃗-lsafe-l ls {l = ⟨ ι x ⟩} tr = isEffPredι x
-∥⃗-lsafe-l ls {l = ⟨ ρ x ⟩} tr = isEffPredρ x
-∥⃗-lsafe-l ls {l = τ} tr = isEffPredτ
+∥ʳ-lsafe-l ls {l = ⟨ ι x ⟩} tr = isEffPredι x
+∥ʳ-lsafe-l ls {l = ⟨ ρ x ⟩} tr = isEffPredρ x
+∥ʳ-lsafe-l ls {l = τ} tr = isEffPredτ
 
-∥⃗-lsafe-r : ∀ {E L A B} {{_ : Concurrent E}} {p : CTree E A ∞} {q : CTree E B ∞} → lsafe L ((p ∥⃗ q) ↑) → lsafe L (q ↑)
-∥⃗-lsafe-r ls {l = ⟨ ε x ⟩} tr with ls (map-step2 _ proj₂ retFreeε (∥-stepRight (RS retFreeε tr)))
+∥ʳ-lsafe-r : ∀ {E L A B} {{_ : Concurrent E}} {p : CTree E A ∞} {q : CTree E B ∞} → lsafe L ((p ∥ʳ q) ↑) → lsafe L (q ↑)
+∥ʳ-lsafe-r ls {l = ⟨ ε x ⟩} tr with ls (map-step2 _ proj₂ retFreeε (∥-stepRight (RS retFreeε tr)))
 ... | isEffPredε .x x₁ = isEffPredε x x₁
-∥⃗-lsafe-r ls {l = ⟨ ι x ⟩} tr = isEffPredι x
-∥⃗-lsafe-r ls {l = ⟨ ρ x ⟩} tr = isEffPredρ x
-∥⃗-lsafe-r ls {l = τ} tr = isEffPredτ
+∥ʳ-lsafe-r ls {l = ⟨ ι x ⟩} tr = isEffPredι x
+∥ʳ-lsafe-r ls {l = ⟨ ρ x ⟩} tr = isEffPredρ x
+∥ʳ-lsafe-r ls {l = τ} tr = isEffPredτ

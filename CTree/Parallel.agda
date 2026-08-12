@@ -1,4 +1,4 @@
-{-# OPTIONS --copatterns --sized-types #-}
+{-# OPTIONS --sized-types #-}
 
 module CTree.Parallel where
 
@@ -26,7 +26,7 @@ open import Relation.Binary.PropositionalEquality
 -- allowed and are handled by returning `r1` and `r2` as result of
 -- `e1` and `e2`, respectively.
 
-record Concurrent (E : Set → Set) : Set₁ where
+record Concurrent (E : Set → Set₁) : Set₁ where
   field
     _⇄_ : ∀ {A B} → E A → E B → CTree E (A × B) ∞
     ⇄-sym : ∀ {A B} (e : E A) (e' : E B) {v w} → e ⇄ e' [ τ ]=> return (v , w) → e' ⇄ e [ τ ]=> return (w , v)
@@ -40,7 +40,7 @@ mk⇄ ((x , y) ∷ r)  = later (∞ret (x , y)) ⊕ mk⇄ r
 
 open Concurrent {{...}} public
 
-defaultPar : ∀ {E : Set → Set} → Concurrent E
+defaultPar : ∀ {E : Set → Set₁} → Concurrent E
 defaultPar = record { _⇄_ = λ _ _ → ∅; ⇄-sym = λ { _ _ ()} ; ⇄-step = λ { _ _ ()}}
 
 
@@ -54,7 +54,7 @@ defaultPar = record { _⇄_ = λ _ _ → ∅; ⇄-sym = λ { _ _ ()} ; ⇄-step 
 
 infixl 7 _∥_
 
-infixl 7 _∥⃗_
+infixl 7 _∥ʳ_
 
 
 mutual
@@ -98,8 +98,7 @@ mutual
 
 -- This is a variant of ∥ that only returns the result of the
 -- right-hand side parallel computation.
-
-
-  _∥⃗_ : ∀ {i A B E} {{_ : Concurrent E}} → CTree E A i → CTree E B i → CTree E B i
-  p ∥⃗ q = map proj₂ (p ∥ q)
+ 
+  _∥ʳ_ : ∀ {i A B E} {{_ : Concurrent E}} → CTree E A i → CTree E B i → CTree E B i
+  p ∥ʳ q = map proj₂ (p ∥ q)
 

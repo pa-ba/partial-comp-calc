@@ -1,4 +1,4 @@
-{-# OPTIONS --copatterns --sized-types --guardedness #-}
+{-# OPTIONS --sized-types #-}
 
 
 ------------------------------------------------------------------------
@@ -194,12 +194,12 @@ spec i (If b x y) {s} {c} =
 
 -- Here we lift the correctness property into its non-indexed form
 -- (i.e. in terms of bisimilarity).
-spec' : ∀ s c x →
+spec' : DNE → ∀ s c x →
   (do v ← eval x
       exec c (v ∷ s))
   ⊥~
   (exec (comp x c) s)
-spec' s c x =  ⊥~i-⊥~  (λ i → spec i x)
+spec' dne s c x =  ⊥~i-⊥~ dne  (λ i → spec i x)
 
 ------------------------
 -- top-level compiler --
@@ -209,12 +209,12 @@ compile : Expr → Code
 compile e = comp e HALT
 
 
-specCompile : ∀ s x →
+specCompile : DNE → ∀ s x →
   (do v ← eval x
       return (v ∷ s))
   ⊥~
   (exec (compile x) s)
-specCompile s x = spec' s HALT x
+specCompile dne s x = spec' dne s HALT x
 
 
 -- Well-typed terms never go wrong and are thus strongly bisimilar to
@@ -260,11 +260,11 @@ eval-safe (⊢if Tb Tx Ty) = safeP->>= (safeP->>= (eval-safe Tb) λ {⊢B → sp
 -- stronger version of the compiler correctness property for
 -- well-typed terms
 
-specCompileTyped : ∀ s x τ →
+specCompileTyped : DNE → ∀ s x τ →
   ⊢ x ∶ τ →
   (do v ← eval x
       return (v ∷ s))
   ~
   (exec (compile x) s)
-specCompileTyped s x τ T = ⊥~-~ (safeP->>= (eval-safe T) λ _ → spnow _) (specCompile s x)
+specCompileTyped dne s x τ T = ⊥~-~ (safeP->>= (eval-safe T) λ _ → spnow _) (specCompile dne s x)
    

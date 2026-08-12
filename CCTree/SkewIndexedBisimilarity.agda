@@ -1,7 +1,7 @@
-{-# OPTIONS --copatterns --sized-types --guardedness #-}
+{-# OPTIONS --sized-types #-}
 
 module CCTree.SkewIndexedBisimilarity where
-open import Memory
+open import Memory renaming (get to get')
 open import CCTree.IndexedBisimilarity
 open import CCTree.Definitions public
 import CTree.SkewIndexedBisimilarity as CT
@@ -25,8 +25,8 @@ private
     B' : Set
     C : Set
     S : Set
-    E : Set → Set
-    F : Set → Set
+    E : Set → Set₁
+    F : Set → Set₁
 
 
 ---------------------------------------------
@@ -44,7 +44,7 @@ open _⊥≲[_]_ public
 
 
 infix 3 _⊥~[_]_
-_⊥~[_]_ : {E : Set → Set} {A : Set} {{_ : Concurrent E}} → CCTree⊥ E A ∞ → ℕ → CCTree⊥ E A ∞ → Set₁ 
+_⊥~[_]_ : {E : Set → Set₁} {A : Set} {{_ : Concurrent E}} → CCTree⊥ E A ∞ → ℕ → CCTree⊥ E A ∞ → Set₁ 
 _⊥~[_]_ = _⊥≲[_]_ {{≡-Ord}}
 
 
@@ -70,7 +70,7 @@ open _⊥≲_ public
 
 
 infix 3 _⊥~_
-_⊥~_ : {E : Set → Set} {A : Set} {{_ : Concurrent E}} → CCTree⊥ E A ∞ → CCTree⊥ E A ∞ → Set₁
+_⊥~_ : {E : Set → Set₁} {A : Set} {{_ : Concurrent E}} → CCTree⊥ E A ∞ → CCTree⊥ E A ∞ → Set₁
 _⊥~_ = _⊥≲_ {{≡-Ord}}
 
 ⊥~mk : ∀ {E A} {{_ : Concurrent E}} {p q : CCTree⊥ E A ∞} → ⟦ p ⟧ CT.return CT.⊥~ ⟦ q ⟧ CT.return → p ⊥~ q
@@ -80,11 +80,15 @@ _⊥~_ = _⊥≲_ {{≡-Ord}}
 ⊥~app : ∀ {E A} {{_ : Concurrent E}} {p q : CCTree⊥ E A ∞} → p ⊥~ q → ⟦ p ⟧ CT.return CT.⊥~ ⟦ q ⟧ CT.return
 ⊥~app = ⊥≲app {{≡-Ord}}
 
-⊥≲i-⊥≲ : ∀ {{_ : Ord A}} {{_ : Concurrent E}} {p q : CCTree⊥ E A ∞} → (∀ i → p ⊥≲[ i ] q) → p ⊥≲ q
-⊥≲i-⊥≲ eqi = ⊥≲mk (CT.⊥≲i-⊥≲ λ i → ⊥≲iapp (eqi i))
+-- The converse directions are the only results here that need
+-- classical reasoning, and they take double-negation elimination as
+-- an explicit assumption.
 
-⊥~i-⊥~ : ∀ {{_ : Concurrent E}} {p q : CCTree⊥ E A ∞} → (∀ i → p ⊥~[ i ] q) → p ⊥~ q
-⊥~i-⊥~ = ⊥≲i-⊥≲ {{≡-Ord}}
+⊥≲i-⊥≲ : CT.DNE → ∀ {{_ : Ord A}} {{_ : Concurrent E}} {p q : CCTree⊥ E A ∞} → (∀ i → p ⊥≲[ i ] q) → p ⊥≲ q
+⊥≲i-⊥≲ dne eqi = ⊥≲mk (CT.⊥≲i-⊥≲ dne λ i → ⊥≲iapp (eqi i))
+
+⊥~i-⊥~ : CT.DNE → ∀ {{_ : Concurrent E}} {p q : CCTree⊥ E A ∞} → (∀ i → p ⊥~[ i ] q) → p ⊥~ q
+⊥~i-⊥~ dne = ⊥≲i-⊥≲ dne {{≡-Ord}}
 
 
 ⊥≲-⊥≲i : ∀ {E A i} {{_ : Ord A}} {{_ : Concurrent E}} {p q : CCTree⊥ E A ∞} → (p ⊥≲ q) → p ⊥≲[ i ] q
@@ -104,19 +108,19 @@ _⊥~_ = _⊥≲_ {{≡-Ord}}
 
 
 mutual
-  data safeP {i : Size} {E A} {{_ : Concurrent E}} (P : A → Set) : CCTree⊥ E A ∞ → Set₁ where
+  data safeP {i : Size} {E A} {{_ : Concurrent E}} (P : A → Set) : CCTree⊥ E A ∞ → Set₂ where
     spnow : ∀ {v} → P v → safeP P (now v)
     splater : ∀ {p} → ∞safeP {i} P p → safeP {i} P (later p)
     spplus : ∀ {p q} → safeP {i} P p → safeP {i} P q → safeP P (p ⊕ q)
     spempty : safeP P ∅    
     speff : ∀ {B k e} → ((r : B) → safeP {i} P (k r)) → safeP P (eff (notStuck e) k)
     safeP->>= : ∀ {B p Q}  {f : B → CCTree⊥ E A ∞ } → safeP {i} Q p → (∀ {v} → Q v → safeP {i} P (f v)) → safeP {i} P (p >>= f)
-    safeP-∥⃗ : ∀ {B q} {p : CCTree⊥ E B ∞}  → (safeP {i} (λ _ → ⊤) p) → (safeP {i}  P q) → safeP {i} P (p ∥⃗ q)
+    safeP-∥ʳ : ∀ {B q} {p : CCTree⊥ E B ∞}  → (safeP {i} (λ _ → ⊤) p) → (safeP {i}  P q) → safeP {i} P (p ∥ʳ q)
     safeP-weaken : ∀ {p Q } → (∀ {x} → Q x → P x) → safeP {i} Q p → safeP {i} P p
     safeP-interpSt⊥ : ∀ {S st F} {{_ : Concurrent F}} {p : CCTree⊥ F A ∞}
       {f : ∀ {B} → S → F B → CCTree⊥ E (B × S) ∞} →
       safeP {i} P p → (∀ {B} {st} {e : F B} → safeP {i} (λ _ → ⊤) (f st e)) → safeP {i} P (interpSt⊥ st f p)
-  record ∞safeP {i : Size} {E A} {{_ : Concurrent E}} (P : A → Set) (p : ∞CCTree⊥ E A ∞) : Set₁ where
+  record ∞safeP {i : Size} {E A} {{_ : Concurrent E}} (P : A → Set) (p : ∞CCTree⊥ E A ∞) : Set₂ where
     coinductive
     constructor mksafeP
     field
@@ -134,7 +138,7 @@ mutual
   safeP-sound spempty k sk = CT.spempty
   safeP-sound (speff sc) k sk = CT.speff λ r → safeP-sound (sc r) k sk
   safeP-sound (safeP->>= sp sf) k sk = safeP-sound sp _ (λ {x} Px → safeP-sound (sf {x} Px) k sk)
-  safeP-sound (safeP-∥⃗ sp sq) k sk = CT.safeP-∥⃗ (safeP-sound sp CT.return λ _ →  CT.spnow tt) (safeP-sound sq k sk)
+  safeP-sound (safeP-∥ʳ sp sq) k sk = CT.safeP-∥ʳ (safeP-sound sp CT.return λ _ →  CT.spnow tt) (safeP-sound sq k sk)
   safeP-sound (safeP-weaken prf sp) k sk = safeP-sound sp k (λ Qx → sk (prf Qx))
   safeP-sound (safeP-interpSt⊥ sp sf) k sk = CT.safeP->>= (CT.safeP-interpSt⊥
    (safeP-sound sp CT.return λ prf → CT.spnow prf) (safeP-sound sf CT.now λ _ → CT.spnow tt)) sk
@@ -145,11 +149,11 @@ mutual
   CT.spforce (∞safeP-sound s k sk) = safeP-sound (spforce s) k sk
 
 
-safe : ∀ {i E A} {{_ : Concurrent E}} → CCTree⊥ E A ∞ → Set₁ 
+safe : ∀ {i E A} {{_ : Concurrent E}} → CCTree⊥ E A ∞ → Set₂ 
 safe {i} = safeP {i} λ _ → ⊤
 
 
-∞safe : ∀ {i E A} {{_ : Concurrent E}} → ∞CCTree⊥ E A ∞ → Set₁ 
+∞safe : ∀ {i E A} {{_ : Concurrent E}} → ∞CCTree⊥ E A ∞ → Set₂ 
 ∞safe {i} = ∞safeP {i} λ _ → ⊤
 
 
@@ -240,39 +244,39 @@ safeP-safe s = safeP-weaken (λ _ → tt) s
 ⊥~itrans = ⊥≲itrans {{≡-Ord}}
 
 ~iset-get : ∀ {E A i} {{_ : Concurrent E}} {m : Memory A} {r : Reg} {v : A} 
-  → get (m #[ r ← v ]) r ~[ i ] return {E = Stuck E} v
+  → get r (set r v m) ~[ i ] return {E = Stuck E} v
 ~iset-get {m = m} {r} {v} rewrite getSet {r = r} {v} {m} =  ~irefl
 
 ~iset-get->>= : ∀ {E A B i} {{_ : Concurrent E}} {m : Memory A} {r : Reg} {v : A} {f : A → CCTree⊥ E B ∞}
-  → (get (m #[ r ← v ]) r >>= f) ~[ i ] f v
+  → (get r (set r v m) >>= f) ~[ i ] f v
 ~iset-get->>= {m = m} {r} {v} rewrite getSet {r = r} {v} {m} = ~ireturn->>=
 
 
 ⊥~iget : ∀ {A E} {{_ : Ord A}} {{_ : Concurrent E}} {i} {r : Reg} {m m' : Memory A}
-           → m ⊑ m' → get {E = E} m r ⊥~[ i ] get m' r
+           → m ⊑ m' → get {E = E} r m ⊥~[ i ] get r m'
 ⊥~iget {r = r} {m = m} le with ⊑-get {r = r} {m = m}
-... | le' with  m #[ r ]
+... | le' with  get' r m
 ... | nothing = ⊥~istuck
 ... | just x rewrite le' le refl = ⊥~irefl
 
 
 ⊥≲iget : ∀ {A E} {{_ : Ord A}}  {{_ : Concurrent E}} {i} {r : Reg} {m m' : Memory A}
-           → m ⊑ m' → get {E = E} m r ⊥≲[ i ] get m' r
+           → m ⊑ m' → get {E = E} r m ⊥≲[ i ] get r m'
 ⊥≲iget le = ⊥~i-⊥≲i (⊥~iget le)
 
 
 
 ⊥~iget->>= : ∀ {A E} {{_ : Ord A}} {{_ : Concurrent E}} {i} {r : Reg} {m m' : Memory A}
            {f : A → CCTree⊥ E B ∞}
-           → m ⊑ m' → get {E = E} m r >>= f ⊥~[ i ] get m' r >>= f
+           → m ⊑ m' → get {E = E} r m >>= f ⊥~[ i ] get r m' >>= f
 ⊥~iget->>= {r = r} {m = m} le with ⊑-get {r = r} {m = m}
-... | le' with  m #[ r ]
+... | le' with  get' r m
 ... | nothing = ⊥~istuck->>=
 ... | just x rewrite le' le refl = ⊥~irefl
 
 ⊥≲iget->>= : ∀ {A E} {{_ : Ord A}} {{_ : Ord B}} {{_ : Concurrent E}} {i} {r : Reg} {m m' : Memory A}
            {f : A → CCTree⊥ E B ∞}
-           → m ⊑ m' → get {E = E} m r >>= f ⊥≲[ i ] get m' r >>= f
+           → m ⊑ m' → get {E = E} r m >>= f ⊥≲[ i ] get r m' >>= f
 ⊥≲iget->>= le = ⊥~i-⊥≲i (⊥~iget->>= le)
 
 ------------------------
@@ -561,51 +565,51 @@ module ⊥≲i-Calculation where
 -- parallel laws --
 -------------------
 
-⊥~ireturn-∥⃗ : ∀ {{_ : Concurrent E}} {v : A} {p : CCTree⊥ E B ∞} 
-  → return v ∥⃗ p ⊥~[ i ] p
-⊥~ireturn-∥⃗ = ⊥~imk CT.⊥~ireturn-∥⃗
+⊥~ireturn-∥ʳ : ∀ {{_ : Concurrent E}} {v : A} {p : CCTree⊥ E B ∞} 
+  → return v ∥ʳ p ⊥~[ i ] p
+⊥~ireturn-∥ʳ = ⊥~imk CT.⊥~ireturn-∥ʳ
 
-⊥≲ireturn-∥⃗ : ∀ {{_ : Ord B}} {{_ : Concurrent E}} {v : A} {p : CCTree⊥ E B ∞} 
-  → return v ∥⃗ p ⊥≲[ i ] p
-⊥≲ireturn-∥⃗ = ⊥≲imk CT.⊥≲ireturn-∥⃗
-
-
-⊥~i∥⃗->>= : ∀ {{_ : Concurrent E}} {p : CCTree⊥ E A ∞} {q : CCTree⊥ E B ∞} {f : B → CCTree⊥ E C ∞}
-  → (p ∥⃗ q) >>= f ⊥~[ i ] p ∥⃗ (q >>= f)
-⊥~i∥⃗->>= {q = q} {f} = ⊥~imk CT.⊥~irefl
-
-⊥≲i∥⃗->>= : ∀ {{_ : Ord C}} {{_ : Concurrent E}} {p : CCTree⊥ E A ∞} {q : CCTree⊥ E B ∞} {f : B → CCTree⊥ E C ∞}
-  → (p ∥⃗ q) >>= f ⊥≲[ i ] p ∥⃗ (q >>= f)
-⊥≲i∥⃗->>= {q = q} {f} = ⊥≲imk CT.⊥≲irefl
+⊥≲ireturn-∥ʳ : ∀ {{_ : Ord B}} {{_ : Concurrent E}} {v : A} {p : CCTree⊥ E B ∞} 
+  → return v ∥ʳ p ⊥≲[ i ] p
+⊥≲ireturn-∥ʳ = ⊥≲imk CT.⊥≲ireturn-∥ʳ
 
 
+⊥~i∥ʳ->>= : ∀ {{_ : Concurrent E}} {p : CCTree⊥ E A ∞} {q : CCTree⊥ E B ∞} {f : B → CCTree⊥ E C ∞}
+  → (p ∥ʳ q) >>= f ⊥~[ i ] p ∥ʳ (q >>= f)
+⊥~i∥ʳ->>= {q = q} {f} = ⊥~imk CT.⊥~irefl
+
+⊥≲i∥ʳ->>= : ∀ {{_ : Ord C}} {{_ : Concurrent E}} {p : CCTree⊥ E A ∞} {q : CCTree⊥ E B ∞} {f : B → CCTree⊥ E C ∞}
+  → (p ∥ʳ q) >>= f ⊥≲[ i ] p ∥ʳ (q >>= f)
+⊥≲i∥ʳ->>= {q = q} {f} = ⊥≲imk CT.⊥≲irefl
 
 
 
-⊥≲i∥⃗-cong : ∀ {{_ : Ord A}} {{_ : Ord B}} {{_ : Concurrent E}} {p p' : CCTree⊥ E A ∞}{q q' : CCTree⊥ E B ∞}
-  → p ⊥≲[ i ] p' → q ⊥≲[ i ] q' → p ∥⃗ q ⊥≲[ i ] p' ∥⃗ q'
-⊥≲i∥⃗-cong (⊥≲imk b1) (⊥≲imk b2) = ⊥≲imk (CT.⊥≲i∥⃗-cong b1 b2)
-
-⊥~i∥⃗-cong : ∀ {{_ : Concurrent E}} {p p' : CCTree⊥ E A ∞}{q q' : CCTree⊥ E B ∞}
-  → p ⊥~[ i ] p' → q ⊥~[ i ] q' → p ∥⃗ q ⊥~[ i ] p' ∥⃗ q'
-⊥~i∥⃗-cong (⊥≲imk b1) (⊥≲imk b2) = ⊥~imk (CT.⊥~i∥⃗-cong b1 b2)
-
-⊥~i∥⃗-cong-l : ∀ {{_ : Concurrent E}} {p p' : CCTree⊥ E A ∞}{q : CCTree⊥ E B ∞}
-  → p ⊥~[ i ] p' → p ∥⃗ q ⊥~[ i ] p' ∥⃗  q
-⊥~i∥⃗-cong-l b = ⊥~i∥⃗-cong b ⊥~irefl
-
-⊥≲i∥⃗-cong-l : ∀ {{_ : Ord A}} {{_ : Ord B}} {{_ : Concurrent E}} {p p' : CCTree⊥ E A ∞}{q : CCTree⊥ E B ∞}
-  → p ⊥≲[ i ] p' → p ∥⃗ q ⊥≲[ i ] p' ∥⃗  q
-⊥≲i∥⃗-cong-l b = ⊥≲i∥⃗-cong b ⊥≲irefl
 
 
-⊥~i∥⃗-cong-r : ∀ {{_ : Concurrent E}} {p : CCTree⊥ E A ∞}{q q' : CCTree⊥ E B ∞}
-  → q ⊥~[ i ] q' → p ∥⃗ q ⊥~[ i ] p ∥⃗ q'
-⊥~i∥⃗-cong-r b = ⊥~i∥⃗-cong ⊥~irefl b
+⊥≲i∥ʳ-cong : ∀ {{_ : Ord A}} {{_ : Ord B}} {{_ : Concurrent E}} {p p' : CCTree⊥ E A ∞}{q q' : CCTree⊥ E B ∞}
+  → p ⊥≲[ i ] p' → q ⊥≲[ i ] q' → p ∥ʳ q ⊥≲[ i ] p' ∥ʳ q'
+⊥≲i∥ʳ-cong (⊥≲imk b1) (⊥≲imk b2) = ⊥≲imk (CT.⊥≲i∥ʳ-cong b1 b2)
 
-⊥≲i∥⃗-cong-r : ∀ {{_ : Ord B}} {{_ : Concurrent E}} {p : CCTree⊥ E A ∞}{q q' : CCTree⊥ E B ∞}
-  → q ⊥≲[ i ] q' → p ∥⃗ q ⊥≲[ i ] p ∥⃗ q'
-⊥≲i∥⃗-cong-r b = ⊥≲i∥⃗-cong {{≡-Ord}} ⊥~irefl b
+⊥~i∥ʳ-cong : ∀ {{_ : Concurrent E}} {p p' : CCTree⊥ E A ∞}{q q' : CCTree⊥ E B ∞}
+  → p ⊥~[ i ] p' → q ⊥~[ i ] q' → p ∥ʳ q ⊥~[ i ] p' ∥ʳ q'
+⊥~i∥ʳ-cong (⊥≲imk b1) (⊥≲imk b2) = ⊥~imk (CT.⊥~i∥ʳ-cong b1 b2)
+
+⊥~i∥ʳ-cong-l : ∀ {{_ : Concurrent E}} {p p' : CCTree⊥ E A ∞}{q : CCTree⊥ E B ∞}
+  → p ⊥~[ i ] p' → p ∥ʳ q ⊥~[ i ] p' ∥ʳ  q
+⊥~i∥ʳ-cong-l b = ⊥~i∥ʳ-cong b ⊥~irefl
+
+⊥≲i∥ʳ-cong-l : ∀ {{_ : Ord A}} {{_ : Ord B}} {{_ : Concurrent E}} {p p' : CCTree⊥ E A ∞}{q : CCTree⊥ E B ∞}
+  → p ⊥≲[ i ] p' → p ∥ʳ q ⊥≲[ i ] p' ∥ʳ  q
+⊥≲i∥ʳ-cong-l b = ⊥≲i∥ʳ-cong b ⊥≲irefl
+
+
+⊥~i∥ʳ-cong-r : ∀ {{_ : Concurrent E}} {p : CCTree⊥ E A ∞}{q q' : CCTree⊥ E B ∞}
+  → q ⊥~[ i ] q' → p ∥ʳ q ⊥~[ i ] p ∥ʳ q'
+⊥~i∥ʳ-cong-r b = ⊥~i∥ʳ-cong ⊥~irefl b
+
+⊥≲i∥ʳ-cong-r : ∀ {{_ : Ord B}} {{_ : Concurrent E}} {p : CCTree⊥ E A ∞}{q q' : CCTree⊥ E B ∞}
+  → q ⊥≲[ i ] q' → p ∥ʳ q ⊥≲[ i ] p ∥ʳ q'
+⊥≲i∥ʳ-cong-r b = ⊥≲i∥ʳ-cong {{≡-Ord}} ⊥~irefl b
 
 ⊥~icong' : ∀ {{_ : Concurrent E}} (p : CCTree⊥ E A ∞) {k : A → CTree⊥ E B ∞} {k' : A → CTree⊥ E C ∞}
   (b : ∀ x → k x CT.>> CT.now tt CT.⊥~[ i ] k' x CT.>> CT.now tt) → ⟦ p ⟧ k CT.>> CT.now tt CT.⊥~[ i ] ⟦ p ⟧ k' CT.>> CT.now tt
@@ -616,39 +620,39 @@ module ⊥≲i-Calculation where
          ⟦ p ⟧ CT.now  CT.>> CT.now tt CT.⊥~[ i ] (⟦ p ⟧ (λ r → CT.now (f r))) CT.>> CT.now tt
 ⊥~icont p f = CT.⊥~itrans (⊥~icong-map p) (⊥~icong-map' p)
 
-⊥~i∥⃗-map-l : ∀ {{_ : Concurrent E}} (p : CCTree⊥ E A ∞) (q : CCTree⊥ E B ∞) {f : A → C}
-  → p ∥⃗ q ⊥~[ i ]  map f p ∥⃗ q
-⊥~i∥⃗-map-l p q {f} = ⊥~imk (CT.⊥~itrans (CT.⊥~itrans (CT.⊥~i∥⃗-map-l (⟦ p ⟧ CT.now) (⟦ q ⟧ CT.return) {f = λ x → tt})
-  (CT.⊥~i∥⃗-cong-l  (⊥~icont p f ))) (CT.⊥~i∥⃗-map-l' (⟦ p ⟧ (λ r → CT.now (f r))) (⟦ q ⟧ CT.return) {f = λ x → tt}))
+⊥~i∥ʳ-map-l : ∀ {{_ : Concurrent E}} (p : CCTree⊥ E A ∞) (q : CCTree⊥ E B ∞) {f : A → C}
+  → p ∥ʳ q ⊥~[ i ]  map f p ∥ʳ q
+⊥~i∥ʳ-map-l p q {f} = ⊥~imk (CT.⊥~itrans (CT.⊥~itrans (CT.⊥~i∥ʳ-map-l (⟦ p ⟧ CT.now) (⟦ q ⟧ CT.return) {f = λ x → tt})
+  (CT.⊥~i∥ʳ-cong-l  (⊥~icont p f ))) (CT.⊥~i∥ʳ-map-l' (⟦ p ⟧ (λ r → CT.now (f r))) (⟦ q ⟧ CT.return) {f = λ x → tt}))
 
 
-⊥≲i∥⃗-map-l : ∀ {{_ : Ord B}} {{_ : Concurrent E}} (p : CCTree⊥ E A ∞) (q : CCTree⊥ E B ∞) {f : A → C}
-  → p ∥⃗ q ⊥≲[ i ]  map f p ∥⃗ q
-⊥≲i∥⃗-map-l p q = ⊥~i-⊥≲i (⊥~i∥⃗-map-l p q)
+⊥≲i∥ʳ-map-l : ∀ {{_ : Ord B}} {{_ : Concurrent E}} (p : CCTree⊥ E A ∞) (q : CCTree⊥ E B ∞) {f : A → C}
+  → p ∥ʳ q ⊥≲[ i ]  map f p ∥ʳ q
+⊥≲i∥ʳ-map-l p q = ⊥~i-⊥≲i (⊥~i∥ʳ-map-l p q)
 
-⊥~i∥⃗-map : ∀ {{_ : Concurrent E}} (p : CCTree⊥ E A ∞) (q : CCTree⊥ E B ∞) {f : A → A'} {g : B → B'}
-  → map g (p ∥⃗ q) ⊥~[ i ]  map f p ∥⃗ map g q
-⊥~i∥⃗-map p q  = ⊥~itrans (⊥~i∥⃗->>= {p = p} {q = q}) (⊥~i∥⃗-map-l p _)
+⊥~i∥ʳ-map : ∀ {{_ : Concurrent E}} (p : CCTree⊥ E A ∞) (q : CCTree⊥ E B ∞) {f : A → A'} {g : B → B'}
+  → map g (p ∥ʳ q) ⊥~[ i ]  map f p ∥ʳ map g q
+⊥~i∥ʳ-map p q  = ⊥~itrans (⊥~i∥ʳ->>= {p = p} {q = q}) (⊥~i∥ʳ-map-l p _)
 
-⊥≲i∥⃗-map : ∀ {{_ : Ord B'}} {{_ : Concurrent E}} (p : CCTree⊥ E A ∞) (q : CCTree⊥ E B ∞) {f : A → A'} {g : B → B'}
-  → map g (p ∥⃗ q) ⊥≲[ i ]  map f p ∥⃗ map g q
-⊥≲i∥⃗-map p q = ⊥~i-⊥≲i (⊥~i∥⃗-map p q)
+⊥≲i∥ʳ-map : ∀ {{_ : Ord B'}} {{_ : Concurrent E}} (p : CCTree⊥ E A ∞) (q : CCTree⊥ E B ∞) {f : A → A'} {g : B → B'}
+  → map g (p ∥ʳ q) ⊥≲[ i ]  map f p ∥ʳ map g q
+⊥≲i∥ʳ-map p q = ⊥~i-⊥≲i (⊥~i∥ʳ-map p q)
 
-⊥~i∥⃗-assoc : ∀ {{_ : Concurrent E}} (p : CCTree⊥ E A ∞) (q : CCTree⊥ E B ∞) (r : CCTree⊥ E C ∞)
-  → (p ∥⃗ q) ∥⃗ r ⊥~[ i ] p ∥⃗ (q ∥⃗ r)
-⊥~i∥⃗-assoc p q r = ⊥~imk (CT.~i-⊥~i (CT.~i∥⃗-assoc (⟦ p ⟧ CT.now) (⟦ q ⟧ CT.now) (⟦ r ⟧ CT.now)))
+⊥~i∥ʳ-assoc : ∀ {{_ : Concurrent E}} (p : CCTree⊥ E A ∞) (q : CCTree⊥ E B ∞) (r : CCTree⊥ E C ∞)
+  → (p ∥ʳ q) ∥ʳ r ⊥~[ i ] p ∥ʳ (q ∥ʳ r)
+⊥~i∥ʳ-assoc p q r = ⊥~imk (CT.~i-⊥~i (CT.~i∥ʳ-assoc (⟦ p ⟧ CT.now) (⟦ q ⟧ CT.now) (⟦ r ⟧ CT.now)))
 
-⊥≲i∥⃗-assoc : ∀ {{_ : Ord C}} {{_ : Concurrent E}} (p : CCTree⊥ E A ∞) (q : CCTree⊥ E B ∞) (r : CCTree⊥ E C ∞)
-  → (p ∥⃗ q) ∥⃗ r ⊥≲[ i ] p ∥⃗ (q ∥⃗ r)
-⊥≲i∥⃗-assoc p q r = ⊥~i-⊥≲i (⊥~i∥⃗-assoc p q r)
+⊥≲i∥ʳ-assoc : ∀ {{_ : Ord C}} {{_ : Concurrent E}} (p : CCTree⊥ E A ∞) (q : CCTree⊥ E B ∞) (r : CCTree⊥ E C ∞)
+  → (p ∥ʳ q) ∥ʳ r ⊥≲[ i ] p ∥ʳ (q ∥ʳ r)
+⊥≲i∥ʳ-assoc p q r = ⊥~i-⊥≲i (⊥~i∥ʳ-assoc p q r)
 
-⊥~i∥⃗-comm : ∀ {{_ : Concurrent E}} (p : CCTree⊥ E A ∞) (q : CCTree⊥ E B ∞) (r : CCTree⊥ E C ∞)
-  → (p ∥⃗ q) ∥⃗ r ⊥~[ i ] (q ∥⃗ p) ∥⃗ r
-⊥~i∥⃗-comm p q r = ⊥~imk (CT.~i-⊥~i(CT.~i∥⃗-comm (⟦ p ⟧ CT.now) (⟦ q ⟧ CT.now) (⟦ r ⟧ CT.now)))
+⊥~i∥ʳ-comm : ∀ {{_ : Concurrent E}} (p : CCTree⊥ E A ∞) (q : CCTree⊥ E B ∞) (r : CCTree⊥ E C ∞)
+  → (p ∥ʳ q) ∥ʳ r ⊥~[ i ] (q ∥ʳ p) ∥ʳ r
+⊥~i∥ʳ-comm p q r = ⊥~imk (CT.~i-⊥~i(CT.~i∥ʳ-comm (⟦ p ⟧ CT.now) (⟦ q ⟧ CT.now) (⟦ r ⟧ CT.now)))
 
-⊥≲i∥⃗-comm : ∀ {{_ : Ord C}} {{_ : Concurrent E}} (p : CCTree⊥ E A ∞) (q : CCTree⊥ E B ∞) (r : CCTree⊥ E C ∞)
-  → (p ∥⃗ q) ∥⃗ r ⊥≲[ i ] (q ∥⃗ p) ∥⃗ r
-⊥≲i∥⃗-comm p q r = ⊥~i-⊥≲i (⊥~i∥⃗-comm p q r)
+⊥≲i∥ʳ-comm : ∀ {{_ : Ord C}} {{_ : Concurrent E}} (p : CCTree⊥ E A ∞) (q : CCTree⊥ E B ∞) (r : CCTree⊥ E C ∞)
+  → (p ∥ʳ q) ∥ʳ r ⊥≲[ i ] (q ∥ʳ p) ∥ʳ r
+⊥≲i∥ʳ-comm p q r = ⊥~i-⊥≲i (⊥~i∥ʳ-comm p q r)
 ------------
 -- interp --
 ------------

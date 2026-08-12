@@ -1,4 +1,4 @@
-{-# OPTIONS --copatterns --sized-types --guardedness #-}
+{-# OPTIONS --sized-types #-}
 
 ------------------------------------------------------------------------
 -- Calculation for the simple arithmetic language with a degenerate
@@ -15,17 +15,17 @@ open import Data.Unit
 open import Relation.Binary.PropositionalEquality
 
 
-data PrintEff : Set → Set where
+data PrintEff : Set → Set₁ where
   printEff : ℕ → PrintEff ⊤
 
 instance
   printEffPar : Concurrent PrintEff
   printEffPar = defaultPar
 
-M : Set → Size → Set₁
+M : Set → Size → Set₂
 M A i = CCTree⊥ PrintEff A i
 
-∞M : Set → Size → Set₁
+∞M : Set → Size → Set₂
 ∞M A i = ∞CCTree⊥ PrintEff A i
 
 print : ∀ {i} → ℕ → M ⊤ i
@@ -55,7 +55,7 @@ mutual
   eval (Print x) = do n ← eval x
                       print n
                       return n
-  eval (Fork x) = eval x ∥⃗ return 0
+  eval (Fork x) = eval x ∥ʳ return 0
 
   ∞eval : ∀ {i} → Expr → ∞M ℕ i
   force (∞eval x) = eval x
@@ -66,7 +66,7 @@ mutual
 
 
 data Code : Set where
-  LOAD : ℕ -> Code -> Code
+  CONST : ℕ -> Code -> Code
   STORE : Reg -> Code -> Code
   ADD : Reg → Code -> Code
   LOOP : Code
@@ -82,14 +82,14 @@ Conf = ℕ × (Memory ℕ)
 
 mutual
   exec : ∀ {i} → Code → Conf → M Conf i
-  exec (LOAD n c) (a , m) = exec c (n , m)
-  exec (STORE r c) (a , m) = exec c (a , m #[ r ← a ])
-  exec (ADD r c) (a , m) = do b ← get m r
+  exec (CONST n c) (a , m) = exec c (n , m)
+  exec (STORE r c) (a , m) = exec c (a , set r a m)
+  exec (ADD r c) (a , m) = do b ← get r m
                               exec c (b + a , m)
   exec LOOP s = later (∞exec LOOP s)
   exec HALT s = return s
   exec (PRINT c) (n , m) = print n >> exec c (n , m)
-  exec (FORK c' c) (a , m)  = (exec c' (a , empty) ∥⃗ exec c (0 , m))
+  exec (FORK c' c) (a , m)  = (exec c' (a , empty) ∥ʳ exec c (0 , m))
 
   ∞exec : ∀ {i} → Code → Conf → ∞M Conf i
   force (∞exec e x) = exec e x
@@ -100,7 +100,7 @@ mutual
 
 
 comp : Expr → Reg → Code → Code
-comp (Val n) r c =  LOAD n c
+comp (Val n) r c =  CONST n c
 comp (Add x y) r c = comp x r (STORE r (comp y (next r) (ADD r c)))
 comp Loop r c = LOOP
 comp (Print x) r c = comp x r (PRINT c)
@@ -111,21 +111,21 @@ comp (Fork x) r c = FORK (comp x first HALT) c
 
 exec-mono : ∀ {i}  {a} {m m' : Memory ℕ} c → m ⊑ m' → exec c (a , m) ⊥≲[ i ] exec c (a , m')
 exec-mono {i = zero} _ _ = ⊥≲izero
-exec-mono (LOAD x c) l = exec-mono c l
+exec-mono (CONST x c) l = exec-mono c l
 exec-mono (STORE x c) l = exec-mono c (set-monotone l)
 exec-mono (ADD x c) l = ⊥≲itrans (⊥≲iget->>= l) (⊥≲i>>=-cong-r _ λ _ → exec-mono c l) 
 exec-mono {suc j} LOOP l = ⊥≲ilater (exec-mono LOOP l)
 exec-mono HALT l = ⊥≲i⊑ (refl , l)
 exec-mono (PRINT c) l = ⊥≲i>>-cong-r _ (exec-mono c l)
-exec-mono (FORK c1 c2) l = ⊥≲i∥⃗-cong (exec-mono c1 (⊑-refl {{MemoryOrd}})) (exec-mono c2 l)
+exec-mono (FORK c1 c2) l = ⊥≲i∥ʳ-cong (exec-mono c1 (⊑-refl {{MemoryOrd}})) (exec-mono c2 l)
 
 
 -----------------
 -- Calculation --
 -----------------
 
--- This is the compiler correctness property in its indexed
--- bisimilarity form. This is where the calculation happens.
+-- This is the compiler correctness property in its i-bisimilarity
+-- form. This is where the calculation happens.
 
 open ⊥≲i-Calculation
 
@@ -142,7 +142,7 @@ spec i (Val x) r {a} {m} {c} F =
    ~⟨ ~ireturn->>= ⟩
    exec c (x , m)
    ≡⟨⟩
-   (exec (LOAD x c) (a , m))
+   (exec (CONST x c) (a , m))
   ∎
 
 
@@ -169,15 +169,15 @@ spec i (Add x y) r {a} {m} {c} F =
      (λ n2 → exec-mono c (⊑-set F))) ⟩
   (do n1 ← eval x
       n2 ← eval y
-      exec c (n1 + n2 , m #[ r ← n1 ]))
+      exec c (n1 + n2 , set r n1 m))
   ~⟨  ~i>>=-cong-r (eval x) (λ n1 →  ~i>>=-cong-r (eval y)
      (λ n2 →  ~isym (~iset-get->>= {r = r}))) ⟩
   (do n1 ← eval x
       n2 ← eval y
-      exec (ADD r c) (n2 , m #[ r ← n1 ]))
+      exec (ADD r c) (n2 , set r n1 m))
   ⊥≲⟨  ⊥≲i>>=-cong-r (eval x) (λ n1 → spec i y (next r) (freeFromSet F)) ⟩
   (do n1 ← eval x
-      exec (comp y (next r) (ADD r c)) (n1 , m #[ r ← n1 ]))
+      exec (comp y (next r) (ADD r c)) (n1 , set r n1 m))
   ≡⟨⟩
     (do n1 ← eval x
         exec (STORE r (comp y (next r) (ADD r c))) (n1 , m))
@@ -217,16 +217,16 @@ spec i (Print x) r {a} {m} {c} F =
 
 
 spec i (Fork x) r {a} {m} {c} F =
-  (do v ← eval x ∥⃗ return 0
+  (do v ← eval x ∥ʳ return 0
       exec c (v , m))
-  ~⟨ ~i∥⃗->>= ⟩ 
-  (eval x ∥⃗ (return 0 >>= λ v → exec c (v , m)))
-  ~⟨ ~i∥⃗-cong-r ~ireturn->>= ⟩
-  (eval x ∥⃗ exec c (0 , m))
-  ~⟨ ~i∥⃗-map-l (eval x) _ ⟩
-  ((eval x >>= λ v → exec HALT (v , empty)) ∥⃗ exec c (0 , m))
-  ⊥≲⟨ ⊥≲i∥⃗-cong-l (spec i x first emptyMemFree) ⟩
-  ((exec (comp x first HALT) (a , empty)) ∥⃗ exec c (0 , m))
+  ~⟨ ~i∥ʳ->>= ⟩ 
+  (eval x ∥ʳ (return 0 >>= λ v → exec c (v , m)))
+  ~⟨ ~i∥ʳ-cong-r ~ireturn->>= ⟩
+  (eval x ∥ʳ exec c (0 , m))
+  ~⟨ ~i∥ʳ-map-l (eval x) _ ⟩
+  ((eval x >>= λ v → exec HALT (v , empty)) ∥ʳ exec c (0 , m))
+  ⊥≲⟨ ⊥≲i∥ʳ-cong-l (spec i x first emptyMemFree) ⟩
+  ((exec (comp x first HALT) (a , empty)) ∥ʳ exec c (0 , m))
   ≡⟨⟩
   (exec (FORK (comp x first HALT) c) (a , m))
   ∎
@@ -235,12 +235,12 @@ spec i (Fork x) r {a} {m} {c} F =
 -- Here we lift the correctness property into its non-indexed form
 -- (i.e. in terms of bisimilarity).
 
-spec' : ∀ x r {a m c} → freeFrom r m →
+spec' : DNE → ∀ x r {a m c} → freeFrom r m →
   (do v ← eval x
       exec c (v , m))
   ⊥≲
   (exec (comp x r c) (a , m))
-spec' x r F =  ⊥≲i-⊥≲  (λ i → spec i  x  r F)
+spec' dne x r F =  ⊥≲i-⊥≲ dne  (λ i → spec i  x  r F)
 
 
 
@@ -251,7 +251,7 @@ mutual
   eval-safe (Add x y) = safeP->>= (eval-safe x) (λ m → safeP->>= (eval-safe y) (λ n → spnow _))
   eval-safe Loop = splater (∞eval-safe Loop)
   eval-safe (Print x) = safeP->>= (eval-safe x) λ _ → safeP->>= (speff (λ _ → spnow tt)) λ _ → spnow _ 
-  eval-safe (Fork x) = safeP-∥⃗ (eval-safe x) (spnow _)
+  eval-safe (Fork x) = safeP-∥ʳ (eval-safe x) (spnow _)
   
   ∞eval-safe : ∀ {i} t → ∞safe {i} (∞eval t)
   spforce (∞eval-safe t) = eval-safe t
@@ -264,11 +264,11 @@ mutual
 compile : Expr → Code
 compile e = comp e first HALT
 
-specCompile : ∀ a x →
+specCompile : DNE → ∀ a x →
   eval x
   ~
   (map proj₁ (exec (compile x) (a , empty)))
-specCompile a x =  ~i-~ λ i → ≲i-~i (λ e → e) (⊥≲i-≲i (eval-safe x)(
+specCompile dne a x =  ~i-~ dne λ i → ≲i-~i (λ e → e) (⊥≲i-≲i (eval-safe x)(
   eval x
     ~⟨ ~isym (~i>>=-return) ⟩
   (do v ← eval x
